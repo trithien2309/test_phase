@@ -1,0 +1,18 @@
+filebeat.inputs:
+  - type: filestream
+    id: pqc-test-log
+    enabled: true
+    paths:
+      - /tmp/pqc-test.log
+
+output.logstash:
+  hosts: ["192.168.22.171:5443"]
+  ssl.enabled: true
+  ssl.certificate_authorities: ["/path/to/ca.crt"]
+  ssl.curve_types: ["X25519MLKEM768"]
+  ssl.supported_protocols: ["TLSv1.3"]
+  ssl.strict_pqc: true
+
+logging.level: debug
+logging.selectors: ["logstash", "tls", "pqc"]
+

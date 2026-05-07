@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AGENT_BIN="${AGENT_BIN:-./build/elastic-agent-pqc-linux-amd64}"
+FLEET_URL="${FLEET_URL:-https://fleet.example.local:8220}"
+ENROLLMENT_TOKEN="${ENROLLMENT_TOKEN:-REPLACE_ME}"
+
+export LOGSTASH_TLS_CURVE_TYPES="${LOGSTASH_TLS_CURVE_TYPES:-X25519MLKEM768}"
+export LOGSTASH_TLS_MIN_VERSION="${LOGSTASH_TLS_MIN_VERSION:-1.3}"
+export LOGSTASH_TLS_STRICT_PQC="${LOGSTASH_TLS_STRICT_PQC:-true}"
+
+echo "LOGSTASH_TLS_CURVE_TYPES=${LOGSTASH_TLS_CURVE_TYPES}"
+echo "LOGSTASH_TLS_MIN_VERSION=${LOGSTASH_TLS_MIN_VERSION}"
+echo "LOGSTASH_TLS_STRICT_PQC=${LOGSTASH_TLS_STRICT_PQC}"
+
+"${AGENT_BIN}" enroll \
+  --url "${FLEET_URL}" \
+  --enrollment-token "${ENROLLMENT_TOKEN}" \
+  --insecure
+
+"${AGENT_BIN}" run -e -d "logstash,tls,pqc"
+

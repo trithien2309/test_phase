@@ -1,0 +1,3 @@
+c37fd96cd23995c10335c8d5239eb671e7de6de11d4f9e117e89e8bcb8231509  elastic-agent-pqc-windows-amd64.zip
+81dee76cc5cab9cb0d7e5e0f24efb20cfe8634485db206521752d6b4a6e286fe  filebeat-pqc-windows-amd64.zip
+43a68e65b9c9ba04ed13643f7bdb9b553c1554807ff3abfb95d115cbadfd60eb  filebeat-pqc-linux-amd64.zip
