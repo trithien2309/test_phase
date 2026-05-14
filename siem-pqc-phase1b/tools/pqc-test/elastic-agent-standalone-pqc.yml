@@ -1,0 +1,34 @@
+agent:
+  logging:
+    level: debug
+    to_stderr: true
+  monitoring:
+    enabled: false
+  internal:
+    runtime:
+      output:
+        logstash: process
+
+outputs:
+  default:
+    type: logstash
+    hosts: ["192.168.22.171:5443"]
+    ssl.enabled: true
+    ssl.verification_mode: none
+    ssl.curve_types: ["X25519MLKEM768"]
+    ssl.supported_protocols: ["TLSv1.3"]
+    ssl.strict_pqc: true
+
+inputs:
+  - type: filestream
+    id: phase1b-agent-standalone-filestream
+    use_output: default
+    data_stream:
+      namespace: default
+    streams:
+      - id: phase1b-agent-standalone-log
+        data_stream:
+          dataset: phase1_pqc_agent_standalone
+          type: logs
+        paths:
+          - C:/pqc-test/agent-standalone-*.log
