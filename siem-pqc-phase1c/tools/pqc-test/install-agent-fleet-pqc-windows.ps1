@@ -191,6 +191,11 @@ package:
   snapshot: false
   hash: $($buildInfo.Commit)
   versioned-home: $($buildInfo.VersionedHomeUnix)
+  flavors:
+    basic:
+      - testbeat
+    servers:
+      - testbeat
   path-mappings:
     - $($buildInfo.VersionedHomeUnix): $($buildInfo.VersionedHomeUnix)
       manifest.yaml: $($buildInfo.VersionedHomeUnix)/manifest.yaml
