@@ -260,7 +260,20 @@ Write-Host "Installing and enrolling Elastic Agent. Enrollment token is intentio
 
 Write-Host ""
 Write-Host "Elastic Agent service:"
-Get-Service elastic-agent | Format-Table -AutoSize
+$agentService = Get-Service -Name "elastic-agent" -ErrorAction SilentlyContinue
+if (-not $agentService) {
+    $agentService = Get-Service -Name "Elastic Agent" -ErrorAction SilentlyContinue
+}
+if (-not $agentService) {
+    $agentService = Get-Service -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -eq "Elastic Agent" -or $_.Name -like "*elastic*agent*" } |
+        Select-Object -First 1
+}
+if ($agentService) {
+    $agentService | Format-Table -AutoSize
+} else {
+    Write-Warning "Elastic Agent service was not found by name or display name. The install command may still have succeeded; check Services.msc if needed."
+}
 
 Write-Host ""
 Write-Host "Check spawned Filebeat process with:"

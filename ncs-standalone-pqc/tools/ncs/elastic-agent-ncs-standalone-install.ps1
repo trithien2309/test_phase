@@ -86,6 +86,19 @@ function Invoke-Download {
     Write-OK "Downloaded: $Destination"
 }
 
+function Get-ElasticAgentService {
+    $svc = Get-Service -Name "elastic-agent" -ErrorAction SilentlyContinue
+    if (-not $svc) {
+        $svc = Get-Service -Name "Elastic Agent" -ErrorAction SilentlyContinue
+    }
+    if (-not $svc) {
+        $svc = Get-Service -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -eq "Elastic Agent" -or $_.Name -like "*elastic*agent*" } |
+            Select-Object -First 1
+    }
+    return $svc
+}
+
 function Uninstall-ExistingElasticAgent {
     $candidatePaths = @(
         (Join-Path $env:ProgramFiles "Elastic\Agent\elastic-agent.exe")
@@ -96,7 +109,7 @@ function Uninstall-ExistingElasticAgent {
     }
 
     $installedAgent = $candidatePaths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-    $svc = Get-Service elastic-agent -ErrorAction SilentlyContinue
+    $svc = Get-ElasticAgentService
 
     if ($installedAgent) {
         Write-Info "Uninstalling existing Elastic Agent using $installedAgent"
@@ -114,12 +127,12 @@ function Uninstall-ExistingElasticAgent {
     }
 
     Start-Sleep -Seconds 3
-    $svc = Get-Service elastic-agent -ErrorAction SilentlyContinue
+    $svc = Get-ElasticAgentService
     if ($svc) {
-        Write-Warn "Elastic Agent service still exists. Stopping and deleting service registration."
-        Stop-Service elastic-agent -Force -ErrorAction SilentlyContinue
+        Write-Warn "Elastic Agent service still exists as '$($svc.Name)'. Stopping and deleting service registration."
+        Stop-Service -Name $svc.Name -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
-        & sc.exe delete elastic-agent | Out-Null
+        & sc.exe delete $svc.Name | Out-Null
         Start-Sleep -Seconds 2
     }
 }
@@ -566,7 +579,12 @@ Write-Info "Running Elastic Agent install in standalone mode. No Fleet URL/token
 Write-Phase "[8/8] Verify local install and print server checks"
 Write-Host ""
 Write-Host "Elastic Agent service:" -ForegroundColor Cyan
-Get-Service elastic-agent | Format-Table -AutoSize
+$agentService = Get-ElasticAgentService
+if ($agentService) {
+    $agentService | Format-Table -AutoSize
+} else {
+    Write-Warn "Elastic Agent service was not found by name or display name. The install command reported success; check Services.msc if needed."
+}
 
 Write-Host ""
 Write-Host "Filebeat child process check:" -ForegroundColor Cyan
