@@ -1,0 +1,8 @@
+listen: "0.0.0.0:5443"
+forward_to: "127.0.0.1:5044"
+cert_file: "/etc/siem-pqc-gateway/certs/server.crt"
+key_file: "/etc/siem-pqc-gateway/certs/server.key"
+tls_min: "TLS1.3"
+tls_max: "TLS1.3"
+curve_preferences:
+  - "X25519MLKEM768"

@@ -7,6 +7,7 @@ Current useful folders:
 - `siem-pqc-phase1`: Phase 1A Filebeat PQC test artifacts.
 - `siem-pqc-phase1b`: Phase 1B standalone Elastic Agent PQC test artifacts.
 - `siem-pqc-phase1c`: Phase 1C Fleet-managed Elastic Agent PQC test artifacts.
+- `ncs-standalone-pqc`: no-Fleet standalone NCS Elastic Agent PQC installer and server receiver.
 
 Legacy Linux AMD64 server binary:
 
