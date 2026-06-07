@@ -526,50 +526,51 @@ function Write-StandaloneConfig {
         [Parameter(Mandatory = $true)][string]$LogstashHost
     )
 
-    $config = @"
-agent:
-  logging:
-    level: debug
-    to_stderr: true
-    to_files: true
-  monitoring:
-    enabled: false
-  internal:
-    runtime:
-      output:
-        logstash: process
-
-outputs:
-  default:
-    type: logstash
-    hosts: ["$LogstashHost"]
-    ssl.enabled: true
-    ssl.verification_mode: none
-    ssl.curve_types: ["X25519MLKEM768"]
-    ssl.supported_protocols: ["TLSv1.3"]
-    ssl.strict_pqc: true
-
-inputs:
-  - id: ncs-windows-events
-    type: winlog
-    use_output: default
-    data_stream:
-      namespace: default
-    streams:
-"@
+    $lines = @(
+        "agent:",
+        "  logging:",
+        "    level: debug",
+        "    to_stderr: true",
+        "    to_files: true",
+        "  monitoring:",
+        "    enabled: false",
+        "  internal:",
+        "    runtime:",
+        "      output:",
+        "        logstash: process",
+        "",
+        "outputs:",
+        "  default:",
+        "    type: logstash",
+        "    hosts: [""$LogstashHost""]",
+        "    ssl.enabled: true",
+        "    ssl.verification_mode: none",
+        "    ssl.curve_types: [""X25519MLKEM768""]",
+        "    ssl.supported_protocols: [""TLSv1.3""]",
+        "    ssl.strict_pqc: true",
+        "",
+        "inputs:",
+        "  - id: ncs-windows-events",
+        "    type: winlog",
+        "    use_output: default",
+        "    data_stream:",
+        "      namespace: default",
+        "    streams:"
+    )
 
     foreach ($channel in Get-NCSWindowsEventChannels) {
         $id = ($channel.Dataset -replace "\.", "-")
-        $config += @"
-      - id: $id
-        name: $($channel.Name)
-        data_stream:
-          type: logs
-          dataset: $($channel.Dataset)
-        ignore_older: 72h
-"@
+        $lines += @(
+            "      - id: $id",
+            "        name: ""$($channel.Name)""",
+            "        data_stream:",
+            "          type: logs",
+            "          dataset: $($channel.Dataset)",
+            "        ignore_older: 72h"
+        )
     }
 
+    $config = ($lines -join "`r`n") + "`r`n"
     Set-Content -Path $ConfigPath -Value $config -Encoding UTF8
     Write-OK "Standalone Elastic Agent config written: $ConfigPath"
 }
@@ -682,7 +683,9 @@ function Enable-NCSWindowsLoggingPolicy {
 
     foreach ($setting in $registrySettings) {
         try {
-            New-Item -Path $setting.Path -Force | Out-Null
+            if (-not (Test-Path -Path $setting.Path)) {
+                New-Item -Path $setting.Path -Force | Out-Null
+            }
             foreach ($value in $setting.Values.GetEnumerator()) {
                 if ($value.Value -is [int]) {
                     New-ItemProperty -Path $setting.Path -Name $value.Key -Value $value.Value -PropertyType DWord -Force | Out-Null

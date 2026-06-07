@@ -62,10 +62,6 @@ function Ensure-BootstrapPayload {
 
     foreach ($relativePath in $requiredFiles) {
         $destination = Join-Path $BootstrapRoot ($relativePath -replace "/", "\")
-        if (Test-Path -LiteralPath $destination) {
-            continue
-        }
-
         $uri = "$($BaseUrl.TrimEnd('/'))/$relativePath"
         Invoke-BootstrapDownload -Uri $uri -Destination $destination
     }
