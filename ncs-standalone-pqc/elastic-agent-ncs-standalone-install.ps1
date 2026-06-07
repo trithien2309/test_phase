@@ -24,8 +24,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-$scriptPath = Join-Path $repoRoot.Path "client\windows\elastic-agent-ncs-standalone-install.ps1"
+$scriptPath = Join-Path $PSScriptRoot "client\windows\elastic-agent-ncs-standalone-install.ps1"
 if (-not (Test-Path -LiteralPath $scriptPath)) {
     throw "Installer implementation not found: $scriptPath"
 }

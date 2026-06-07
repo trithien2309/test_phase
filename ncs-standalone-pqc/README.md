@@ -1,10 +1,8 @@
 # NCS Standalone PQC Elastic Agent
 
-This folder is the no-Fleet test path for the custom SIEM ELK project.
+Folder này là đường test no-Fleet cho Windows client.
 
-The Windows installer installs Elastic Agent in standalone mode, writes local config, spawns the custom PQC Filebeat, and sends logs to the PQC Gateway.
-
-## Flow
+Flow:
 
 ```text
 Windows client
@@ -20,55 +18,88 @@ Windows client
 
 ## Windows Quick Test
 
-Run PowerShell as Administrator:
+Tải hoặc clone repo, mở PowerShell bằng quyền Administrator tại folder này:
 
 ```powershell
-cd C:\test_phase\ncs-standalone-pqc
+cd C:\path\to\test_phase\ncs-standalone-pqc
 
+powershell -ExecutionPolicy Bypass -File .\elastic-agent-ncs-standalone-install.ps1 `
+  -GatewayHost "192.168.22.171" `
+  -GatewayPort 5443
+```
+
+Nếu Gateway chưa bật nhưng vẫn muốn cài trước:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\elastic-agent-ncs-standalone-install.ps1 `
+  -GatewayHost "192.168.22.171" `
+  -GatewayPort 5443 `
+  -AllowGatewayOffline
+```
+
+Đường script cũ vẫn dùng được:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\ncs\elastic-agent-ncs-standalone-install.ps1 `
   -GatewayHost "192.168.22.171" `
   -GatewayPort 5443
 ```
 
-The script downloads these existing artifacts automatically:
+## Script Sẽ Làm Gì
 
 ```text
-https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages/elastic-agent-pqc-phase1c-windows-amd64-package.zip
-https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages/filebeat-pqc-windows-amd64.zip
+[0/9] Preflight: Administrator, Windows x64, Gateway TCP
+[1/9] Gỡ Elastic Agent cũ nếu có
+[2/9] Download artifact từ GitHub hoặc dùng local zip
+[3/9] Extract Elastic Agent PQC + Filebeat PQC
+[4/9] Cài/cập nhật Sysmon64 và verify Sysmon channel
+[5/9] Cấu hình Windows audit/PowerShell/event log policy
+[6/9] Tạo Elastic Agent standalone config với 6 Windows channels
+[7/9] Set machine-level PQC env cho Windows service
+[8/9] Cài Elastic Agent standalone service
+[9/9] Verify local: Agent, Sysmon, Filebeat PQC, 6 channels, PQC env, TLS/PQC marker nếu có
 ```
 
-If you already have the zip files locally:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\ncs\elastic-agent-ncs-standalone-install.ps1 `
-  -GatewayHost "192.168.22.171" `
-  -GatewayPort 5443 `
-  -AgentPackageZip "C:\path\elastic-agent-pqc-phase1c-windows-amd64-package.zip" `
-  -FilebeatPqcZip "C:\path\filebeat-pqc-windows-amd64.zip"
-```
-
-## Sources Collected
-
-Standalone config reads:
+Artifact được tải mặc định từ:
 
 ```text
+https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages
+```
+
+Script ưu tiên tên mới:
+
+```text
+ncs-elastic-agent-pqc-windows-amd64.zip
+filebeat-pqc-windows-amd64.zip
+```
+
+Và tự fallback tên Agent artifact cũ đã test:
+
+```text
+elastic-agent-pqc-phase1c-windows-amd64-package.zip
+```
+
+## Windows Event Channels
+
+Script cài/cập nhật Sysmon và cấu hình collect 6 channel:
+
+```text
+Microsoft-Windows-Sysmon/Operational
 Security
+System
+Application
 Windows PowerShell
 Microsoft-Windows-PowerShell/Operational
-C:\pqc-test\ncs-agent-smoke.log
 ```
 
-The smoke file is only for quick transport verification. The real Windows log sources are the event logs above.
-
-## Expected Markers
+## Expected Local Markers
 
 Windows Agent/Filebeat logs:
 
 ```text
-using_custom_filebeat=true
-pqc_env_forwarded=true
-pqc_mode=enabled
-curve_preferences=[X25519MLKEM768]
+TLS handshake completed
+tls_version="TLS 1.3"
+configured_curve_preferences=["X25519MLKEM768"]
 strict_pqc=true
 ```
 
@@ -78,12 +109,4 @@ Gateway logs:
 handshake ok tls_version=TLS 1.3
 forwarding raw Beats/Lumberjack stream to 127.0.0.1:5044
 client->logstash bytes=...
-```
-
-Kibana:
-
-```text
-Data view: ncs-windows-pqc-*
-Search: data_stream.dataset : "ncs.transport_smoke"
-Search: event.code : "4688" or event.code : "4104"
 ```
