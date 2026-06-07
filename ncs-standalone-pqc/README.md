@@ -16,9 +16,27 @@ Windows client
   -> Elasticsearch / Kibana
 ```
 
-## Windows Quick Test
+## Windows Quick Test - Chỉ Tải 1 Script
 
-Tải hoặc clone repo, mở PowerShell bằng quyền Administrator tại folder này:
+Mở PowerShell bằng quyền Administrator, tải một file script rồi chạy:
+
+```powershell
+cd C:\Users\Administrator\Downloads
+
+Invoke-WebRequest `
+  -Uri "https://github.com/trithien2309/test_phase/raw/main/ncs-standalone-pqc/elastic-agent-ncs-standalone-install.ps1" `
+  -OutFile ".\elastic-agent-ncs-standalone-install.ps1"
+
+powershell -ExecutionPolicy Bypass -File .\elastic-agent-ncs-standalone-install.ps1 `
+  -GatewayHost "192.168.22.171" `
+  -GatewayPort 5443
+```
+
+Script sẽ tự tải implementation, Sysmon, GPO resources, Elastic Agent artifact và Filebeat PQC artifact từ GitHub.
+
+## Windows Quick Test - Clone/ZIP Cả Repo
+
+Nếu đã clone hoặc giải nén cả repo, chạy tại folder này:
 
 ```powershell
 cd C:\path\to\test_phase\ncs-standalone-pqc

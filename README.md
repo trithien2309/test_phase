@@ -9,7 +9,21 @@ Current useful folders:
 - `siem-pqc-phase1c`: Phase 1C Fleet-managed Elastic Agent PQC test artifacts.
 - `ncs-standalone-pqc`: no-Fleet standalone NCS Elastic Agent PQC installer, Sysmon/audit setup, and server receiver.
 
-Windows quick test:
+Windows quick test, chỉ tải một script:
+
+```powershell
+cd C:\Users\Administrator\Downloads
+
+Invoke-WebRequest `
+  -Uri "https://github.com/trithien2309/test_phase/raw/main/ncs-standalone-pqc/elastic-agent-ncs-standalone-install.ps1" `
+  -OutFile ".\elastic-agent-ncs-standalone-install.ps1"
+
+powershell -ExecutionPolicy Bypass -File .\elastic-agent-ncs-standalone-install.ps1 `
+  -GatewayHost "192.168.22.171" `
+  -GatewayPort 5443
+```
+
+Windows quick test nếu đã clone/giải nén repo:
 
 ```powershell
 cd .\ncs-standalone-pqc
