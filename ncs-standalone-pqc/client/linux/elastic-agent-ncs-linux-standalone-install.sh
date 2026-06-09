@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages"
+AGENT_ARTIFACT_BASE_URL="https://artifacts.elastic.co/downloads/beats/elastic-agent"
+FILEBEAT_ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1"
+METADATA_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/ncs-standalone-pqc"
 BOOTSTRAP_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/ncs-standalone-pqc"
 ARTIFACT_PRIVATE_TOKEN=""
 AGENT_PACKAGE=""
@@ -13,9 +15,10 @@ GATEWAY_PORT="5443"
 SMOKE_LOG="/var/log/ncs-agent-smoke.log"
 ALLOW_GATEWAY_OFFLINE=0
 VERIFY_ONLY_AUDITD=0
+ELASTIC_AGENT_VERSION="9.5.0"
 
-AGENT_PACKAGE_NAMES=("ncs-elastic-agent-pqc-linux-amd64.tar.gz")
-FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.tar.gz")
+AGENT_PACKAGE_NAMES=("elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz" "ncs-elastic-agent-pqc-linux-amd64.tar.gz")
+FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.zip" "filebeat-pqc-linux-amd64.tar.gz")
 AUDITD_BUNDLE_NAMES=("ncs-linux-auditd-v3.7.8-minimal.tar.gz")
 MANIFEST_NAME="manifest.json"
 SHA256_NAME="SHA256SUMS.txt"
@@ -254,7 +257,7 @@ copy_or_download_metadata() {
     return 0
   fi
 
-  if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+  if try_download_file "${METADATA_BASE_URL%/}/${name}" "$destination"; then
     ok "Metadata downloaded: ${name}"
     return 0
   fi
@@ -298,9 +301,10 @@ show_manifest_info() {
   fi
 }
 
-resolve_artifact() {
+resolve_artifact_from_base() {
   local provided="$1"
-  shift
+  local base_url="$2"
+  shift 2
   local names=("$@")
 
   if [[ -n "$provided" ]]; then
@@ -329,7 +333,7 @@ resolve_artifact() {
 
   for name in "${names[@]}"; do
     destination="${PACKAGES_DIR}/${name}"
-    if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+    if try_download_file "${base_url%/}/${name}" "$destination"; then
       verify_sha_if_known "$destination"
       printf '%s\n' "$destination"
       return 0
@@ -341,7 +345,8 @@ resolve_artifact() {
 
 resolve_optional_artifact() {
   local provided="$1"
-  shift
+  local base_url="$2"
+  shift 2
   local names=("$@")
 
   if [[ -n "$provided" ]]; then
@@ -370,7 +375,7 @@ resolve_optional_artifact() {
 
   for name in "${names[@]}"; do
     destination="${PACKAGES_DIR}/${name}"
-    if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+    if try_download_file "${base_url%/}/${name}" "$destination"; then
       verify_sha_if_known "$destination"
       printf '%s\n' "$destination"
       return 0
@@ -962,9 +967,9 @@ phase "[2/9] Download or use local PQC artifacts"
 copy_or_download_metadata "$MANIFEST_NAME" || true
 copy_or_download_metadata "$SHA256_NAME" || true
 show_manifest_info
-AGENT_ARCHIVE="$(resolve_artifact "$AGENT_PACKAGE" "${AGENT_PACKAGE_NAMES[@]}")"
-FILEBEAT_ARCHIVE="$(resolve_artifact "$FILEBEAT_PQC_PACKAGE" "${FILEBEAT_PACKAGE_NAMES[@]}")"
-AUDITD_ARCHIVE="$(resolve_optional_artifact "$AUDITD_BUNDLE" "${AUDITD_BUNDLE_NAMES[@]}" || true)"
+AGENT_ARCHIVE="$(resolve_artifact_from_base "$AGENT_PACKAGE" "$AGENT_ARTIFACT_BASE_URL" "${AGENT_PACKAGE_NAMES[@]}")"
+FILEBEAT_ARCHIVE="$(resolve_artifact_from_base "$FILEBEAT_PQC_PACKAGE" "$FILEBEAT_ARTIFACT_BASE_URL" "${FILEBEAT_PACKAGE_NAMES[@]}")"
+AUDITD_ARCHIVE="$(resolve_optional_artifact "$AUDITD_BUNDLE" "$FILEBEAT_ARTIFACT_BASE_URL" "${AUDITD_BUNDLE_NAMES[@]}" || true)"
 
 phase "[3/9] Extract PQC and auditd artifacts"
 extract_agent_package "$AGENT_ARCHIVE"

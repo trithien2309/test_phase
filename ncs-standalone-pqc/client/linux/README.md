@@ -16,10 +16,11 @@ Elastic Agent standalone
 Can upload hoac dat local cac file sau:
 
 ```text
-ncs-elastic-agent-pqc-linux-amd64.tar.gz
-filebeat-pqc-linux-amd64.tar.gz
+elastic-agent-9.5.0-linux-x86_64.tar.gz
+filebeat-pqc-linux-amd64.zip
 ```
 
+`ncs-elastic-agent-pqc-linux-amd64.tar.gz` va `filebeat-pqc-linux-amd64.tar.gz` van duoc support neu ban co package custom rieng.
 `ncs-linux-auditd-v3.7.8-minimal.tar.gz` la optional vi repo da kem auditd resources toi thieu trong `client/linux/resources/auditd`.
 
 ## Run
@@ -36,8 +37,8 @@ Neu dung artifact local:
 sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
   --gateway-host 192.168.22.171 \
   --gateway-port 5443 \
-  --agent-package ./ncs-elastic-agent-pqc-linux-amd64.tar.gz \
-  --filebeat-pqc-package ./filebeat-pqc-linux-amd64.tar.gz
+  --agent-package ./elastic-agent-9.5.0-linux-x86_64.tar.gz \
+  --filebeat-pqc-package ./filebeat-pqc-linux-amd64.zip
 ```
 
 ## Supported Linux v1

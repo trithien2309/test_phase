@@ -4,12 +4,16 @@
   "version": "phase1-linux",
   "artifacts": {
     "agent": {
-      "name": "ncs-elastic-agent-pqc-linux-amd64.tar.gz",
-      "fallback_names": []
+      "name": "elastic-agent-9.5.0-linux-x86_64.tar.gz",
+      "fallback_names": [
+        "ncs-elastic-agent-pqc-linux-amd64.tar.gz"
+      ]
     },
     "filebeat": {
-      "name": "filebeat-pqc-linux-amd64.tar.gz",
-      "fallback_names": []
+      "name": "filebeat-pqc-linux-amd64.zip",
+      "fallback_names": [
+        "filebeat-pqc-linux-amd64.tar.gz"
+      ]
     },
     "auditd": {
       "name": "ncs-linux-auditd-v3.7.8-minimal.tar.gz",
