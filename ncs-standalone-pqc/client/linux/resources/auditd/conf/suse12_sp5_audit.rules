@@ -1,0 +1,468 @@
+# GTSC ------------------------------------------------------------------------
+
+## First rule - Remove any existing rules
+-D
+
+## Increase the buffers to survive stress events.
+## Make this bigger for busy systems
+-b 8192
+
+# Self Auditing ---------------------------------------------------------------
+
+## Audit the audit logs
+### Successful and unsuccessful attempts to read information from the audit records
+-w /var/log/audit/ -k auditlog
+
+## Auditd configuration
+## Modifications to audit configuration that occur while the audit collection functions are operating
+-w /etc/audit/ -p wa -k auditconfig
+-w /etc/libaudit.conf -p wa -k auditconfig
+-w /etc/audisp/ -p wa -k audispconfig
+
+## Monitor for use of audit management tools
+-w /sbin/auditctl -p x -k audittools
+-w /sbin/auditd -p x -k audittools
+-w /usr/sbin/augenrules -p x -k audittools
+
+# Filters ---------------------------------------------------------------------
+
+## Ignore VMWare Tools
+-a exit,never -F arch=b32 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
+-a exit,never -F arch=b64 -S fork -F success=0 -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2
+-a exit,never -F arch=b32 -S bind -F success=1 -F path=/usr/bin/vmtoolsd -F auid=unset
+-a exit,never -F arch=b64 -S bind -F success=1 -F path=/usr/bin/vmtoolsd -F auid=unset
+
+## Ignore syslog process
+-a exit,never -F success=1 -F path=/usr/sbin/rsyslogd
+-a exit,never -F success=0 -F path=/usr/sbin/rsyslogd
+-a exit,never -F success=1 -F path=/usr/sbin/syslog-ng
+-a exit,never -F success=0 -F path=/usr/sbin/syslog-ng
+
+## Ignore proctitle records
+-a always,exclude -F msgtype=PROCTITLE
+
+## Prevents chrony from overwhelming the logs
+#-a never,exit -F arch=b64 -S adjtimex -F auid=unset -F uid=chrony -F subj_type=chronyd_t
+
+# Rules -----------------------------------------------------------------------
+
+# T1002.Data Compressed
+-w /usr/bin/tar -p x -k data-compressed
+-w /usr/bin/gzip -p x -k data-compressed
+-w /usr/bin/zip -p x -k data-compressed
+-w /usr/bin/unzip -p x -k data-compressed
+
+# T1005.Data from Local
+-w /usr/bin/cp -p x -k data-from-local
+-w /usr/bin/dd -p x -k data-from-local
+-w /usr/bin/mv -p x -k data-from-local
+
+# Changes to hostname
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -F auid!=0 -k network-modifications
+-a always,exit -F arch=b32 -S sethostname -S setdomainname -F auid!=0 -k network-modifications
+-w /etc/hosts -p wa -k network-modifications
+-w /etc/hosts.allow -p wa -k network-modifications
+-w /etc/hosts.deny -p wa -k network-modifications
+-w /etc/sysconfig/network -p wa -k network-modifications
+-w /etc/network/ -p wa -k network-modifications
+-w /etc/NetworkManager/ -p wa -k network-modifications
+
+# T1016.System Network Configuration Discovery
+-w /usr/sbin/sysctl -p x -k network-discovery
+-w /usr/sbin/ip -p x -k network-discovery
+-w /usr/sbin/arp -p x -k network-discovery
+-w /usr/sbin/nslookup -p x -k network-discovery
+-w /usr/sbin/dig -p x -k network-discovery
+-w /usr/bin/sysctl -p x -k network-discovery
+-w /usr/bin/ip -p x -k network-discovery
+-w /usr/bin/traceroute -p x -k network-discovery
+-w /usr/bin/tracepath -p x -k network-discovery
+-w /usr/bin/nmcli -p x -k network-discovery
+-w /usr/bin/nslookup -p x -k network-discovery
+-w /usr/bin/dig -p x -k network-discovery
+-w /bin/sysctl -p x -k network-discovery
+-w /bin/traceroute -p x -k network-discovery
+-w /bin/tracepath -p x -k network-discovery
+-w /sbin/iwconfig -p x -k network-discovery
+-w /sbin/ifconfig -p x -k network-discovery
+-w /sbin/dhclient -p x -k network-discovery
+-w /sbin/route -p x -k network-discovery
+-w /etc/resolv.conf -p r -k network-discovery
+-w /etc/netplan/ -p r -k network-discovery
+-w /etc/hostname -p r -k network-discovery
+-w /proc/sys/net/ipv4/ip_forward -p wa -k network-discovery
+-w /proc/net/ -p r -k network-discovery
+
+# T1021.Remote Service
+# SSH Service
+-w /etc/ssh/sshd_config -p r -k remote-discovery
+-w /var/log/faillog -p r -k remote-discovery
+-w /var/log/lastlog -p r -k remote-discovery
+-w /var/log/tallylog -p r -k remote-discovery
+
+# T1039.Data from Network Shared Drive
+
+# T1040.Network Sniffing
+-w /usr/sbin/bettercap -p x -k network-sniffing
+-w /usr/sbin/dsniff -p x -k network-sniffing
+-w /usr/sbin/eigrp-tools -p x -k network-sniffing
+-w /usr/sbin/ettercap -p x -k network-sniffing
+-w /usr/sbin/httpsniff -p x -k network-sniffing
+-w /usr/sbin/netsniff-ng -p x -k network-sniffing
+-w /usr/sbin/sslsniff -p x -k network-sniffing
+-w /usr/sbin/ssldump -p x -k network-sniffing
+-w /usr/sbin/tcpick -p x -k network-sniffing
+-w /usr/sbin/wifi-monitor -p x -k network-sniffing
+-w /usr/sbin/tcpdump -p x -k network-sniffing
+-w /usr/sbin/wireshark-cli -p x -k network-sniffing
+-w /usr/sbin/wireshark-qt -p x -k network-sniffing
+-w /usr/sbin/wireshark -p x -k network-sniffing
+-w /usr/sbin/tshark -p x -k network-sniffing
+-w /usr/sbin/rawshark -p x -k network-sniffing
+-w /usr/bin/wireshark -p x -k network-sniffing
+-w /usr/bin/rawshark -p x -k network-sniffing
+
+# T1049.System Network Connections Discovery
+-w /bin/ping -p x -k connections-discovery
+-w /bin/ping6 -p x -k connections-discovery
+-w /usr/bin/ping -p x -k connections-discovery
+-w /usr/bin/ping6 -p x -k connections-discovery
+-w /usr/bin/lsof -p x -k connections-discovery
+-w /usr/sbin/ss -p x -k connections-discovery
+-w /usr/sbin/lsof -p x -k connections-discovery
+-w /usr/bin/netstat -p x -k connections-discovery
+
+# T1052.Exfiltration Over Physical Medium
+-a always,exit -F arch=b32 -S mount -S umount -S umount2 -k mount
+-a always,exit -F arch=b64 -S mount -S umount2 -k mount
+
+# T1055.Process Injection
+-a always,exit -F arch=b32 -S ptrace -k process-injection
+-a always,exit -F arch=b64 -S ptrace -k process-injection
+-a always,exit -F arch=b32 -S ptrace -F a0=0x4 -k code_injection
+-a always,exit -F arch=b64 -S ptrace -F a0=0x4 -k code_injection
+-a always,exit -F arch=b32 -S ptrace -F a0=0x5 -k data_injection
+-a always,exit -F arch=b64 -S ptrace -F a0=0x5 -k data_injection
+-a always,exit -F arch=b32 -S ptrace -F a0=0x6 -k register_injection
+-a always,exit -F arch=b64 -S ptrace -F a0=0x6 -k register_injection
+
+# T1057.Process Discovery
+-w /bin/ps -p x -k process-discovery
+-w /bin/pidof -p x -k process-discovery
+-w /usr/bin/ps -p x -k process-discovery
+-w /usr/bin/top -p x -k process-discovery
+-w /usr/bin/htop -p x -k process-discovery
+-w /usr/bin/atop -p x -k process-discovery
+-w /usr/bin/pgrep -p x -k process-discovery
+-w /usr/sbin/iotop -p x -k process-discovery
+-w /usr/sbin/pidof -p x -k process-discovery
+
+# T1070.Indicator Removal on Host
+-a always,exit -F dir=/bin -F arch=b32 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/bin -F arch=b64 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/sbin -F arch=b32 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/sbin -F arch=b64 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/usr/bin -F arch=b32 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/usr/bin -F arch=b64 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/usr/sbin -F arch=b32 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/usr/sbin -F arch=b64 -S rename -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+
+# Normal User Clear Logs
+-a always,exit -F dir=/var/log -F arch=b32 -S rename,renameat,unlink,unlinkat,rmdir -F uid!=0 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F dir=/var/log -F arch=b64 -S rename,renameat,unlink,unlinkat,rmdir -F uid!=0 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F arch=b32 -S unlink,unlinkat,rmdir -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F arch=b64 -S unlink,unlinkat,rmdir -F auid>=1000 -F auid!=-1 -F exit=0 -k removal-logs
+-a always,exit -F arch=b32 -S rmdir,unlink,unlinkat,rename,renameat -F auid=0 -k removal-logs
+-a always,exit -F arch=b64 -S rmdir,unlink,unlinkat,rename,renameat -F auid=0 -k removal-logs
+
+# Change timestamp
+-a exit,always -F arch=b32 -S adjtimex -S settimeofday -S clock_settime -F exit=0 -k removal-logs
+-a exit,always -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -F exit=0 -k removal-logs
+-w /etc/localtime -p wa -k removal-logs
+
+# T1072.Third-party Software
+# RPM (CentOS/RHEL)
+-w /usr/bin/rpm -p x -k package-manager
+-w /usr/bin/yum -p x -k package-manager
+-w /usr/bin/dnf -p x -k package-manager
+# YAST/Zypper/RPM (SuSE)
+-w /bin/rpm -p x -k package-manager
+-w /sbin/yast -p x -k package-manager
+-w /sbin/yast2 -p x -k package-manager
+-w /usr/bin/zypper -p x -k package-manager
+# DPKG/APT-GET (Debian/Ubuntu)
+-w /usr/bin/dpkg -p x -k package-manager
+-w /usr/bin/apt-add-repository -p x -k package-manager
+-w /usr/bin/apt -p x -k package-manager
+-w /usr/bin/apt-get -p x -k package-manager
+-w /usr/bin/aptitude -p x -k package-manager
+-w /usr/bin/wajig -p x -k package-manager
+-w /usr/bin/snap -p x -k package-manager
+-w /usr/bin/pip -p x -k package-manager
+-w /usr/bin/pip3 -p x -k package-manager
+-w /usr/bin/npm -p x -k package-manager
+-w /usr/bin/cpan -p x -k package-manager
+-w /usr/bin/gem -p x -k package-manager
+-w /usr/bin/luarocks -p x -k package-manager
+
+# T1078.RULE Valid Accounts
+# Source IP: TrustedNetworks
+-w /usr/bin/passwd -p x -k valid-accounts
+-w /usr/bin/gpasswd -p x -k valid-accounts
+-w /usr/sbin/userhelper -p x -k valid-accounts
+-a always,exit -F path=/bin/chgrp -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/sbin/pam_timestamp_check -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/sbin/unix_chkpwd -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/sbin/pwck -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/sbin/suexec -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/sbin/semanage -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/sbin/usernetctl -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/sbin/ccreds_validate -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+#-a always,exit -F path=/usr/libexec/openssh/ssh-keysign -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/rlogin -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/sudoedit -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/rsh -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/kgrantpty -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/sudo -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/staprun -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/rcp -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/chsh -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/chfn -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/chage -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/setfacl -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/chacl -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/chcon -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/newgrp -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+-a always,exit -F path=/usr/bin/kpac_dhcp_helper -F perm=x -F auid>=500 -F auid!=-1 -k valid-accounts
+
+# T1082.System Information Discovery
+-w /usr/bin/uname -p x -k system-info-discovery
+-w /usr/bin/lscpu -p x -k system-info-discovery
+-w /usr/bin/lsblk -p x -k system-info-discovery
+-w /usr/bin/fdisk -p x -k system-info-discovery
+-w /usr/bin/lsb_release -p x -k system-info-discovery
+-w /etc/os-release -p r -k system-info-discovery
+-w /etc/login.defs -p wa -k system-info-discovery
+-w /etc/securetty -p wa -k system-info-discovery
+
+# T1083.File and Directory Discovery
+-w /usr/bin/ls -p x -k file-discovery
+-w /usr/bin/dir -p x -k file-discovery
+-w /usr/bin/tree -p x -k file-discovery
+-w /usr/bin/find -p x -k file-discovery
+-w /usr/bin/locate -p x -k file-discovery
+-w /usr/bin/pwd -p x -k file-discovery
+
+# T1087.Account Discovery
+-w /etc/passwd -p rwa -k account-discovery
+-w /etc/master.passwd -p rwa -k account-discovery
+-w /etc/group -p rwa -k account-discovery
+-w /etc/shadow -p rwa -k account-discovery
+-w /etc/gshadow -p rwa -k account-discovery
+-w /etc/security/opasswd -p rwa -k account-discovery
+-w /usr/bin/who -p x -k account-discovery
+-w /usr/bin/whoami -p x -k account-discovery
+-w /usr/bin/users -p x -k account-discovery
+-w /usr/bin/groups -p x -k account-discovery
+-w /usr/bin/getent -p x -k account-discovery
+-w /usr/bin/id -p x -k account-discovery
+-w /usr/bin/ldapsearch -p x -k account-discovery
+-w /usr/sbin/nologin -p rwxa -k account-discovery
+-w /sbin/nologin -p rwxa -k account-discovery
+
+# T1092.Communication Through Removable Media
+
+# T1107.File Deletion
+-a always,exit -F arch=b32 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid!=4294967295 -F auid!=0 -k file-delete
+-a always,exit -F arch=b64 -S rmdir -S unlink -S unlinkat -S rename -S renameat -F auid!=4294967295 -F auid!=0 -k file-delete
+
+# T1130.Install Root Certificate
+-w /etc/pki/ca-trust/ -p w -F uid!=0 -k root-cert
+
+# T1136.Create Account
+-w /usr/bin/realm -p x -k create-account
+-w /usr/sbin/useradd -p x -k create-account
+-w /usr/sbin/adduser -p x -k create-account
+-w /usr/sbin/newusers -p x -k create-account
+-w /usr/sbin/realm -p x -k create-account
+-w /usr/sbin/groupadd -p x -k create-account
+-w /usr/sbin/addgroup -p x -k create-account
+-w /usr/sbin/groupmod -p x -k create-account
+-w /usr/sbin/groupdel -p x -k create-account
+
+# T1145.Private Keys
+# SSH Key of user: /home/<user>/.ssh/ -p r -k private-keys
+-w /root/.ssh -p wa -k rootkey
+-w /etc/ssl/certs -p r -k private-keys
+#-w /etc/pki/ca-trust/extracted/pem -p r -k private-keys
+-w /etc/pki/tls -p r -k private-keys
+
+# T1146.Clear Command History
+-a always,exit -F arch=b64 -S rmdir,unlink,unlinkat,rename,renameat -F auid=0 -F path=/root/.bash_history -k clear-bash
+-w /root/.bash_history -p w -k clear-bash
+
+# T1156..bash_profile and .bashrc
+-w /etc/profile.d/ -p w -k bashrc
+-w /etc/profile -p w -k bashrc
+-w /etc/shells -p w -k bashrc
+-w /etc/bashrc -p w -k bashrc
+-w /etc/csh.cshrc -p w -k bashrc
+-w /etc/csh.login -p w -k bashrc
+-w /root/.bashrc -p w -k bashrc
+-w /root/.bash_profile -p w -k bashrc
+# -w /home/<user>/.bashrc -p w -k bashrc
+# -w /home/<user>/.bash_profile -p w -k bashrc
+
+# T1168.Local Job Scheduling
+-w /etc/crontab -p rwa -k scheduling
+-w /etc/anacrontab -p wa -k scheduling
+-w /etc/cron.allow -p wa -k scheduling
+-w /etc/cron.deny -p wa -k scheduling
+-w /etc/cron.d/ -p wa -k scheduling
+-w /etc/cron.daily/ -p wa -k scheduling
+-w /etc/cron.hourly/ -p wa -k scheduling
+-w /etc/cron.monthly/ -p wa -k scheduling
+-w /etc/cron.weekly/ -p wa -k scheduling
+-w /etc/inittab -p wa -k scheduling
+-w /etc/init.d/ -p wa -k scheduling
+-w /etc/init/ -p wa -k scheduling
+-w /etc/at.allow -p wa -k scheduling
+-w /etc/at.deny/ -p wa -k scheduling
+-w /var/spool/cron/ -p wa -k scheduling
+-w /var/spool/cron/crontabs/ -p wa -k scheduling
+-w /var/spool/at/ -p wa -k scheduling
+
+## Pam configuration change
+-w /etc/pam.d/ -p wa -k pam
+-w /etc/security/limits.conf -p wa  -k pam
+-w /etc/security/limits.d -p wa  -k pam
+-w /etc/security/pam_env.conf -p wa -k pam
+-w /etc/security/namespace.conf -p wa -k pam
+-w /etc/security/namespace.d -p wa -k pam
+-w /etc/security/namespace.init -p wa -k pam
+
+
+# T1215.Kernel Modules and Extensions
+-a always,exit -F arch=b32 -S create_module,init_module,delete_module,get_kernel_syms,query_module,finit_module -F key=kernel
+-a always,exit -F arch=b64 -S create_module,init_module,delete_module,get_kernel_syms,query_module,finit_module -F key=kernel
+-w /sbin/insmod -p x -k kernel
+-w /sbin/modprobe -p x -k kernel
+-w /sbin/rmmod -p x -k kernel
+-w /usr/sbin/insmod -p x -k kernel
+-w /usr/sbin/modprobe -p x -k kernel
+-w /usr/sbin/rmmod -p x -k kernel
+
+# Modprobe configuration
+-w /etc/modprobe.conf -p wa -k modprobe
+-w /etc/modprobe.d -p wa -k modprobe
+
+# Kernel parameters
+-w /etc/sysctl.conf -p wa -k sysctl
+-w /etc/sysctl.d -p wa -k sysctl
+
+# T1222.File and Directory Permissions Modification
+-a always,exit -F arch=b32 -S chmod -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S chmod -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S chown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S chown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fchmod -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fchmod -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fchmodat -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fchmodat -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fchown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fchown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fchownat -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fchownat -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fremovexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fremovexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S fsetxattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S fsetxattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S lchown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S lchown -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S lremovexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S lremovexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S lsetxattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S lsetxattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S removexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S removexattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b32 -S setxattr -F auid!=4294967295 -k perm-mod
+-a always,exit -F arch=b64 -S setxattr -F auid!=4294967295 -k perm-mod
+
+# T1485.Data Destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/etc -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/etc -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/bin -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/bin -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/sbin -k destruction 
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/sbin -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/usr/bin -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/usr/bin -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/usr/sbin -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/usr/sbin -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/var -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/var -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/home -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/home -k destruction
+-a always,exit -F arch=b32 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/srv -k destruction
+-a always,exit -F arch=b64 -S rename,rmdir,unlink,unlinkat,renameat -F auid!=-1 -F dir=/srv -k destruction
+
+# T1488.Disk Content Wipe
+# T1107.File Deletion match at least 10 times with the same MITRE-Linux: Auditd Key (custom) in 1 minutes
+
+# T1491.Defacement
+#-a exit,always -F dir=/var/www -F perm=w -F key=defacement
+
+# T1518.Security Software Discovery
+-w /sbin/iptables -p x -k security-software-discovery
+-w /usr/bin/ufw -p x -k security-software-discovery
+-w /usr/bin/pfctl -p x -k security-software-discovery
+-w /usr/bin/pf -p x -k security-software-discovery
+-w /usr/bin/getenforce -p x -k security-software-discovery
+-w /usr/sbin/ufw -p x -k security-software-discovery
+-w /usr/sbin/pfctl -p x -k security-software-discovery
+-w /usr/sbin/pf -p x -k security-software-discovery
+-w /usr/sbin/getenforce -p x -k security-software-discovery
+-w /usr/sbin/iptables -p x -k security-software-discovery
+-w /sbin/auditctl -p x -k security-software-discovery
+-w /sbin/auditd -p x -k security-software-discovery
+-w /usr/sbin/augenrules -p x -k security-software-discovery
+-w /etc/audit/ -p wa -k security-software-discovery
+-w /etc/libaudit.conf -p wa -k security-software-discovery
+-w /etc/audisp/ -p wa -k security-software-discovery
+
+# T1529.System Shutdown/Reboot 
+#REDHAT/CENTOS
+-w /sbin/reboot -p x -k reboot
+-w /sbin/init -p x -k reboot
+-w /sbin/poweroff -p x -k reboot
+-w /sbin/shutdown -p x -k reboot
+-w /sbin/halt -p x -k reboot  
+#DEBIAN/UBUNTU
+-w /usr/sbin/reboot -p x -k reboot
+-w /usr/sbin/init -p x -k reboot
+-w /usr/sbin/poweroff -p x -k reboot
+-w /usr/sbin/shutdown -p x -k reboot
+-w /usr/sbin/halt -p x -k reboot
+
+# T1531.Account Access Removal
+-w /usr/sbin/usermod -p x -k usr-access-rem
+-w /usr/sbin/userdel -p x -k usr-access-rem
+
+# T1548.Elevation Control Mechanism
+-a always,exit -F arch=b32 -S setuid -S setgid -S setreuid -S setregid -k elevation-control-mechanism
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -k elevation-control-mechanism
+-a always,exit -F arch=b32 -S setuid -S setgid -S setreuid -S setregid -F exit=EPERM -k elevation-control-mechanism
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -F exit=EPERM -k elevation-control-mechanism
+
+# T1059.Command-Line Interface
+-a exit,always -F arch=b32 -S execve -k cmd-interface
+-a exit,always -F arch=b64 -S execve -k cmd-interface
+
+# Get all conection, 
+-a never,exit -F arch=b32 -S connect -F success=1 -k network-conection
+-a never,exit -F arch=b64 -S connect -F success=1 -k network-conection
+-a never,exit -F arch=b32 -S bind -F success=1 -k network-conection
+-a never,exit -F arch=b64 -S bind -F success=1 -k network-conection
+
+# Enable audit
+-e 1

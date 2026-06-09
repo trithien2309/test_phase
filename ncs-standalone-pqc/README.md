@@ -16,6 +16,20 @@ Windows client
   -> Elasticsearch / Kibana
 ```
 
+Flow Linux v1:
+
+```text
+Linux client
+  -> elastic-agent-ncs-linux-standalone-install.sh
+  -> Elastic Agent standalone service
+  -> filebeat-pqc-linux-amd64
+  -> TLS 1.3 + X25519MLKEM768
+  -> PQC Gateway 192.168.22.171:5443
+  -> raw Beats/Lumberjack
+  -> Logstash :5044
+  -> Elasticsearch / Kibana
+```
+
 ## Windows Quick Test - Chỉ Tải 1 Script
 
 Mở PowerShell bằng quyền Administrator, tải một file script rồi chạy:
@@ -33,6 +47,22 @@ powershell -ExecutionPolicy Bypass -File .\elastic-agent-ncs-standalone-install.
 ```
 
 Script sẽ tự tải implementation, Sysmon, GPO resources, Elastic Agent artifact và Filebeat PQC artifact từ GitHub.
+
+## Linux Quick Test
+
+Tải 1 file script rồi chạy:
+
+```bash
+curl -L \
+  -o elastic-agent-ncs-linux-standalone-install.sh \
+  https://github.com/trithien2309/test_phase/raw/main/ncs-standalone-pqc/elastic-agent-ncs-linux-standalone-install.sh
+
+sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
+  --gateway-host 192.168.22.171 \
+  --gateway-port 5443
+```
+
+Luu y: ban Linux nay can them artifact `ncs-elastic-agent-pqc-linux-amd64.tar.gz` neu muon chay day du mot lenh. Script da support `--agent-package` va `--filebeat-pqc-package` de tro toi package local/da upload sau nay.
 
 ## Windows Quick Test - Clone/ZIP Cả Repo
 
