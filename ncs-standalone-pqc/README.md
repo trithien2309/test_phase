@@ -62,7 +62,7 @@ sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
   --gateway-port 5443
 ```
 
-Luu y: ban Linux nay se fallback sang `elastic-agent-9.5.0-linux-x86_64.tar.gz` cua Elastic neu ban chua upload agent custom rieng. Filebeat PQC Linux se lay tu `siem-pqc-phase1/filebeat-pqc-linux-amd64.zip`. Neu muon dung package local, script van support `--agent-package` va `--filebeat-pqc-package`.
+Luu y: ban Linux nay se fallback sang `elastic-agent-9.4.0-linux-x86_64.tar.gz` cua Elastic neu ban chua upload agent custom rieng. Filebeat PQC Linux se lay tu `siem-pqc-phase1/filebeat-pqc-linux-amd64.zip`. Bootstrap chi tai payload toi thieu theo distro hien tai, khong tai toan bo goi Ubuntu/RHEL/Oracle. Neu muon dung package local, script van support `--agent-package` va `--filebeat-pqc-package`.
 
 ## Windows Quick Test - Clone/ZIP Cả Repo
 

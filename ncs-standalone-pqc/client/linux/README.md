@@ -16,7 +16,7 @@ Elastic Agent standalone
 Can upload hoac dat local cac file sau:
 
 ```text
-elastic-agent-9.5.0-linux-x86_64.tar.gz
+elastic-agent-9.4.0-linux-x86_64.tar.gz
 filebeat-pqc-linux-amd64.zip
 ```
 
@@ -37,9 +37,11 @@ Neu dung artifact local:
 sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
   --gateway-host 192.168.22.171 \
   --gateway-port 5443 \
-  --agent-package ./elastic-agent-9.5.0-linux-x86_64.tar.gz \
+  --agent-package ./elastic-agent-9.4.0-linux-x86_64.tar.gz \
   --filebeat-pqc-package ./filebeat-pqc-linux-amd64.zip
 ```
+
+Khi chay bang mot file wrapper tu GitHub, bootstrap chi tai payload toi thieu theo distro hien tai. Vi du Ubuntu 24.04 chi tai `ubuntu_audit.rules`, khong tai cac package `ubuntu20`, `ubuntu22`, `oracle_rhel_centos7`.
 
 ## Supported Linux v1
 

@@ -15,7 +15,7 @@ GATEWAY_PORT="5443"
 SMOKE_LOG="/var/log/ncs-agent-smoke.log"
 ALLOW_GATEWAY_OFFLINE=0
 VERIFY_ONLY_AUDITD=0
-ELASTIC_AGENT_VERSION="9.5.0"
+ELASTIC_AGENT_VERSION="9.4.0"
 
 AGENT_PACKAGE_NAMES=("elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz" "ncs-elastic-agent-pqc-linux-amd64.tar.gz")
 FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.zip" "filebeat-pqc-linux-amd64.tar.gz")
@@ -677,7 +677,7 @@ YAML
 }
 
 agent_build_info() {
-  local version="9.5.0"
+  local version="$ELASTIC_AGENT_VERSION"
   local commit="unknown"
   local out
   out="$("$AGENT_BIN" version --binary-only 2>&1 || true)"

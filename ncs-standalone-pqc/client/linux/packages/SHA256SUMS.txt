@@ -1,6 +1,6 @@
 # Linux PQC artifacts are intentionally not committed to git.
 # Add hashes here after uploading these files to GitHub/GitLab package storage:
-# elastic-agent-9.5.0-linux-x86_64.tar.gz
+# elastic-agent-9.4.0-linux-x86_64.tar.gz
 # filebeat-pqc-linux-amd64.zip
 # ncs-elastic-agent-pqc-linux-amd64.tar.gz
 # filebeat-pqc-linux-amd64.tar.gz

@@ -67,38 +67,79 @@ download_file() {
   fi
 }
 
+detect_bootstrap_profile() {
+  local os_id=""
+  local os_like=""
+  local os_major=0
+
+  if [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    local version_id="${VERSION_ID:-0}"
+    os_id="${ID:-}"
+    os_like="${ID_LIKE:-}"
+    os_major="${version_id%%.*}"
+    [[ "$os_major" =~ ^[0-9]+$ ]] || os_major=0
+  fi
+
+  printf '%s|%s|%s\n' "$os_id" "$os_like" "$os_major"
+}
+
+bootstrap_auditd_rule_for_host() {
+  local os_id="$1"
+  local os_like="$2"
+  local os_major="$3"
+
+  if [[ "$os_id" == "ubuntu" ]]; then
+    (( os_major >= 20 )) || return 1
+    printf '%s\n' "client/linux/resources/auditd/conf/ubuntu_audit.rules"
+    return 0
+  fi
+
+  if [[ "$os_id" == "debian" ]]; then
+    (( os_major >= 10 )) || return 1
+    printf '%s\n' "client/linux/resources/auditd/conf/ubuntu_audit.rules"
+    return 0
+  fi
+
+  if [[ "$os_id" =~ ^(rhel|centos|rocky|almalinux|ol|oracle)$ ]] || [[ "$os_like" == *"rhel"* ]] || [[ "$os_like" == *"fedora"* ]]; then
+    (( os_major >= 7 )) || return 1
+    printf '%s\n' "client/linux/resources/auditd/conf/centos_audit.rules"
+    return 0
+  fi
+
+  return 1
+}
+
 ensure_bootstrap_payload() {
   local base_url="${1%/}"
   local bootstrap_root="$2"
+  local selected_rule="$3"
   local required_files=(
     "client/linux/elastic-agent-ncs-linux-standalone-install.sh"
     "client/linux/packages/manifest.json"
     "client/linux/packages/SHA256SUMS.txt"
-    "client/linux/resources/auditd/conf/ubuntu_audit.rules"
-    "client/linux/resources/auditd/conf/centos_audit.rules"
-    "client/linux/resources/auditd/conf/centos6_audit.rules"
-    "client/linux/resources/auditd/conf/rhel6_audit.rules"
-    "client/linux/resources/auditd/conf/suse12_audit.rules"
-    "client/linux/resources/auditd/conf/suse12_sp5_audit.rules"
-    "client/linux/resources/auditd/setup/ubuntu20/auditd_2.8.5-2ubuntu6_amd64.deb"
-    "client/linux/resources/auditd/setup/ubuntu20/libauparse0_2.8.5-2ubuntu6_amd64.deb"
-    "client/linux/resources/auditd/setup/ubuntu22/auditd_3.0.7-1build1_amd64.deb"
-    "client/linux/resources/auditd/setup/ubuntu22/libauparse0_3.0.7-1build1_amd64.deb"
-    "client/linux/resources/auditd/setup/ubuntu2404/auditd_3.1.2-2.1build1.1_amd64.deb"
-    "client/linux/resources/auditd/setup/ubuntu2404/libauparse0t64_3.1.2-2.1build1.1_amd64.deb"
-    "client/linux/resources/auditd/setup/oracle_rhel_centos7/audit-2.8.5-4.el7.x86_64.rpm"
-    "client/linux/resources/auditd/setup/oracle_rhel_centos7/audit-libs-2.8.5-4.el7.x86_64.rpm"
   )
 
   for relative_path in "${required_files[@]}"; do
     download_file "${base_url}/${relative_path}" "${bootstrap_root}/${relative_path}"
   done
+
+  if [[ -n "$selected_rule" ]]; then
+    download_file "${base_url}/${selected_rule}" "${bootstrap_root}/${selected_rule}"
+  fi
 }
 
 if [[ ! -f "$IMPLEMENTATION" ]]; then
   BOOTSTRAP_ROOT="${INSTALL_ROOT}/bootstrap"
   log_bootstrap "Local client/linux payload not found. Bootstrapping into ${BOOTSTRAP_ROOT}"
-  ensure_bootstrap_payload "$BOOTSTRAP_BASE_URL" "$BOOTSTRAP_ROOT"
+  IFS='|' read -r BOOTSTRAP_ID BOOTSTRAP_ID_LIKE BOOTSTRAP_MAJOR <<< "$(detect_bootstrap_profile)"
+  BOOTSTRAP_SELECTED_RULE="$(bootstrap_auditd_rule_for_host "$BOOTSTRAP_ID" "$BOOTSTRAP_ID_LIKE" "$BOOTSTRAP_MAJOR" || true)"
+  if [[ -z "$BOOTSTRAP_SELECTED_RULE" ]]; then
+    printf 'Unsupported Linux distro for bootstrap: ID=%s VERSION=%s\n' "$BOOTSTRAP_ID" "$BOOTSTRAP_MAJOR" >&2
+    exit 1
+  fi
+  ensure_bootstrap_payload "$BOOTSTRAP_BASE_URL" "$BOOTSTRAP_ROOT" "$BOOTSTRAP_SELECTED_RULE"
   IMPLEMENTATION="${BOOTSTRAP_ROOT}/client/linux/elastic-agent-ncs-linux-standalone-install.sh"
 fi
 

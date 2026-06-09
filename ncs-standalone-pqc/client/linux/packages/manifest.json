@@ -4,7 +4,7 @@
   "version": "phase1-linux",
   "artifacts": {
     "agent": {
-      "name": "elastic-agent-9.5.0-linux-x86_64.tar.gz",
+      "name": "elastic-agent-9.4.0-linux-x86_64.tar.gz",
       "fallback_names": [
         "ncs-elastic-agent-pqc-linux-amd64.tar.gz"
       ]
