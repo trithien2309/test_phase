@@ -1,0 +1,32 @@
+{
+  "name": "soc-sme-windows-pqc-standalone",
+  "phase": "windows-standalone-sysmon-audit-pqc",
+  "version": "phase1-windows",
+  "artifacts": {
+    "agent": {
+      "name": "ncs-elastic-agent-pqc-windows-amd64.zip",
+      "fallback_names": [
+        "elastic-agent-pqc-phase1c-windows-amd64-package.zip"
+      ]
+    },
+    "filebeat": {
+      "name": "filebeat-pqc-windows-amd64.zip",
+      "fallback_names": []
+    }
+  },
+  "transport": {
+    "tls_min_version": "TLSv1.3",
+    "curve_types": [
+      "X25519MLKEM768"
+    ],
+    "strict_pqc": true
+  },
+  "windows_event_channels": [
+    "Microsoft-Windows-Sysmon/Operational",
+    "Security",
+    "System",
+    "Application",
+    "Windows PowerShell",
+    "Microsoft-Windows-PowerShell/Operational"
+  ]
+}

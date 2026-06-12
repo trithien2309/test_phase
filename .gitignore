@@ -1,0 +1,14 @@
+*.pcap
+*.log
+.env
+certs/
+secrets/
+.gocache/
+.gocache*/
+.gomodcache/
+.gomodcache*/
+*.exe
+!client/windows/resources/Sysmonv14/Sysmon64.exe
+packages/*.zip
+client/windows/packages/*.zip
+client/windows/packages/*.part*
