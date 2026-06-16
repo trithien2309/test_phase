@@ -1,9 +1,11 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages"
+ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1"
 BOOTSTRAP_BASE_URL="https://raw.githubusercontent.com/trithien2309/test_phase/demo"
 ARTIFACT_PRIVATE_TOKEN=""
+ELASTIC_AGENT_VERSION="9.4.2"
+ELASTIC_AGENT_BASE_URL="https://artifacts.elastic.co/downloads/beats/elastic-agent"
 AGENT_PACKAGE=""
 FILEBEAT_PQC_PACKAGE=""
 AUDITD_BUNDLE=""
@@ -14,8 +16,8 @@ SMOKE_LOG="/var/log/ncs-agent-smoke.log"
 ALLOW_GATEWAY_OFFLINE=0
 VERIFY_ONLY_AUDITD=0
 
-AGENT_PACKAGE_NAMES=("ncs-elastic-agent-pqc-linux-amd64.tar.gz")
-FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.tar.gz")
+AGENT_PACKAGE_NAMES=()
+FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.zip" "filebeat-pqc-linux-amd64.tar.gz")
 AUDITD_BUNDLE_NAMES=("ncs-linux-auditd-v3.7.8-minimal.tar.gz")
 MANIFEST_NAME="manifest.json"
 SHA256_NAME="SHA256SUMS.txt"
@@ -48,6 +50,8 @@ Options:
   --artifact-base-url URL
   --bootstrap-base-url URL
   --artifact-private-token TOKEN
+  --elastic-agent-version VERSION
+  --elastic-agent-base-url URL
   --agent-package PATH
   --filebeat-pqc-package PATH
   --auditd-bundle PATH
@@ -96,6 +100,24 @@ while [[ $# -gt 0 ]]; do
       ;;
     --artifact-private-token=*)
       ARTIFACT_PRIVATE_TOKEN="${1#*=}"
+      shift
+      ;;
+    --elastic-agent-version)
+      require_value "$1" "${2:-}"
+      ELASTIC_AGENT_VERSION="$2"
+      shift 2
+      ;;
+    --elastic-agent-version=*)
+      ELASTIC_AGENT_VERSION="${1#*=}"
+      shift
+      ;;
+    --elastic-agent-base-url)
+      require_value "$1" "${2:-}"
+      ELASTIC_AGENT_BASE_URL="$2"
+      shift 2
+      ;;
+    --elastic-agent-base-url=*)
+      ELASTIC_AGENT_BASE_URL="${1#*=}"
       shift
       ;;
     --agent-package)
@@ -182,6 +204,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 INSTALL_ROOT="${INSTALL_ROOT%/}"
+AGENT_PACKAGE_NAMES=("elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz")
 PACKAGES_DIR="${INSTALL_ROOT}/packages"
 LOGS_DIR="${INSTALL_ROOT}/logs"
 AGENT_DIR="${INSTALL_ROOT}/agent"
@@ -254,7 +277,7 @@ copy_or_download_metadata() {
     return 0
   fi
 
-  if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+  if try_download_file "${BOOTSTRAP_BASE_URL%/}/client/linux/packages/${name}" "$destination"; then
     ok "Metadata downloaded: ${name}"
     return 0
   fi
@@ -300,7 +323,8 @@ show_manifest_info() {
 
 resolve_artifact() {
   local provided="$1"
-  shift
+  local remote_base_url="$2"
+  shift 2
   local names=("$@")
 
   if [[ -n "$provided" ]]; then
@@ -329,7 +353,7 @@ resolve_artifact() {
 
   for name in "${names[@]}"; do
     destination="${PACKAGES_DIR}/${name}"
-    if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+    if try_download_file "${remote_base_url%/}/${name}" "$destination"; then
       verify_sha_if_known "$destination"
       printf '%s\n' "$destination"
       return 0
@@ -341,7 +365,8 @@ resolve_artifact() {
 
 resolve_optional_artifact() {
   local provided="$1"
-  shift
+  local remote_base_url="$2"
+  shift 2
   local names=("$@")
 
   if [[ -n "$provided" ]]; then
@@ -370,7 +395,7 @@ resolve_optional_artifact() {
 
   for name in "${names[@]}"; do
     destination="${PACKAGES_DIR}/${name}"
-    if try_download_file "${ARTIFACT_BASE_URL%/}/${name}" "$destination"; then
+    if try_download_file "${remote_base_url%/}/${name}" "$destination"; then
       verify_sha_if_known "$destination"
       printf '%s\n' "$destination"
       return 0
@@ -475,36 +500,20 @@ read_os_release() {
   DETECTED_ARCH="$(uname -m)"
 }
 
-is_rhel_like() {
-  [[ "$DETECTED_ID" =~ ^(rhel|centos|rocky|almalinux|ol|oracle)$ ]] || [[ "$DETECTED_ID_LIKE" == *"rhel"* ]] || [[ "$DETECTED_ID_LIKE" == *"fedora"* ]]
-}
-
 select_auditd_profile() {
   AUDITD_PROFILE=""
   AUDITD_RULE_SOURCE=""
 
-  if [[ "$DETECTED_ID" == "ubuntu" ]]; then
-    if (( DETECTED_MAJOR < 20 )); then
-      fail "Ubuntu ${DETECTED_VERSION} is unsupported in Linux v1. Use Ubuntu 20.04+."
-    fi
-    AUDITD_PROFILE="ubuntu"
-    AUDITD_RULE_SOURCE="${AUDITD_DIR}/conf/ubuntu_audit.rules"
-  elif [[ "$DETECTED_ID" == "debian" ]]; then
-    if (( DETECTED_MAJOR < 10 )); then
-      fail "Debian ${DETECTED_VERSION} is unsupported in Linux v1. Use Debian 10+."
-    fi
-    AUDITD_PROFILE="debian"
-    AUDITD_RULE_SOURCE="${AUDITD_DIR}/conf/ubuntu_audit.rules"
-  elif is_rhel_like; then
-    if (( DETECTED_MAJOR < 7 )); then
-      fail "${DETECTED_ID} ${DETECTED_VERSION} is unsupported in Linux v1. Use EL7+."
-    fi
-    AUDITD_PROFILE="rhel"
-    AUDITD_RULE_SOURCE="${AUDITD_DIR}/conf/centos_audit.rules"
-  else
-    fail "Unsupported Linux distro: ID=${DETECTED_ID} VERSION_ID=${DETECTED_VERSION}"
+  if [[ "$DETECTED_ID" != "ubuntu" ]]; then
+    fail "Linux v1 currently supports Ubuntu 20.04+ only. Detected: ID=${DETECTED_ID} VERSION_ID=${DETECTED_VERSION}"
   fi
 
+  if (( DETECTED_MAJOR < 20 )); then
+    fail "Ubuntu ${DETECTED_VERSION} is unsupported in Linux v1. Use Ubuntu 20.04+."
+  fi
+
+  AUDITD_PROFILE="ubuntu"
+  AUDITD_RULE_SOURCE="${AUDITD_DIR}/conf/ubuntu_audit.rules"
   [[ -f "$AUDITD_RULE_SOURCE" ]] || fail "Audit rule file not found: ${AUDITD_RULE_SOURCE}"
   ok "Linux profile: id=${DETECTED_ID} version=${DETECTED_VERSION} arch=${DETECTED_ARCH} audit_profile=${AUDITD_PROFILE}"
 }
@@ -531,46 +540,17 @@ install_auditd_ubuntu_offline() {
   return 1
 }
 
-install_auditd_rhel() {
-  if [[ "$DETECTED_MAJOR" == "7" && -d "${AUDITD_DIR}/setup/oracle_rhel_centos7" ]]; then
-    info "Installing auditd from EL7 rpm bundle"
-    if rpm -Uvh --replacepkgs "${AUDITD_DIR}/setup/oracle_rhel_centos7"/*.rpm; then
-      return 0
-    fi
-    warn "Offline rpm install did not complete cleanly"
-  fi
-
-  if command -v dnf >/dev/null 2>&1; then
-    dnf install -y audit audit-libs
-  elif command -v yum >/dev/null 2>&1; then
-    yum install -y audit audit-libs
-  else
-    return 1
-  fi
-}
-
 install_or_verify_auditd() {
   select_auditd_profile
 
   if auditd_exists; then
     ok "auditd already installed"
   else
-    case "$AUDITD_PROFILE" in
-      ubuntu)
-        install_auditd_ubuntu_offline || {
-          warn "Offline auditd install failed or packages missing; trying apt-get"
-          apt-get update
-          apt-get install -y auditd audispd-plugins || apt-get install -y auditd
-        }
-        ;;
-      debian)
-        apt-get update
-        apt-get install -y auditd audispd-plugins || apt-get install -y auditd
-        ;;
-      rhel)
-        install_auditd_rhel || fail "Could not install auditd on ${DETECTED_ID}"
-        ;;
-    esac
+    install_auditd_ubuntu_offline || {
+      warn "Offline auditd install failed or packages missing; trying apt-get"
+      apt-get update
+      apt-get install -y auditd audispd-plugins || apt-get install -y auditd
+    }
   fi
 
   [[ -f /etc/audit/auditd.conf ]] || fail "/etc/audit/auditd.conf not found after auditd install"
@@ -672,7 +652,7 @@ YAML
 }
 
 agent_build_info() {
-  local version="9.5.0"
+  local version="$ELASTIC_AGENT_VERSION"
   local commit="unknown"
   local out
   out="$("$AGENT_BIN" version --binary-only 2>&1 || true)"
@@ -865,6 +845,8 @@ preflight() {
   ok "Linux x86_64 detected: ${DETECTED_ID} ${DETECTED_VERSION}"
   info "Install root: ${INSTALL_ROOT}"
   info "PQC Gateway: ${GATEWAY_HOST}:${GATEWAY_PORT}"
+  info "Elastic Agent artifact: ${ELASTIC_AGENT_BASE_URL%/}/elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz"
+  info "PQC artifact base: ${ARTIFACT_BASE_URL%/}"
 
   if test_tcp_port "$GATEWAY_HOST" "$GATEWAY_PORT"; then
     ok "TCP reachable: ${GATEWAY_HOST}:${GATEWAY_PORT}"
@@ -962,9 +944,9 @@ phase "[2/9] Download or use local PQC artifacts"
 copy_or_download_metadata "$MANIFEST_NAME" || true
 copy_or_download_metadata "$SHA256_NAME" || true
 show_manifest_info
-AGENT_ARCHIVE="$(resolve_artifact "$AGENT_PACKAGE" "${AGENT_PACKAGE_NAMES[@]}")"
-FILEBEAT_ARCHIVE="$(resolve_artifact "$FILEBEAT_PQC_PACKAGE" "${FILEBEAT_PACKAGE_NAMES[@]}")"
-AUDITD_ARCHIVE="$(resolve_optional_artifact "$AUDITD_BUNDLE" "${AUDITD_BUNDLE_NAMES[@]}" || true)"
+AGENT_ARCHIVE="$(resolve_artifact "$AGENT_PACKAGE" "$ELASTIC_AGENT_BASE_URL" "${AGENT_PACKAGE_NAMES[@]}")"
+FILEBEAT_ARCHIVE="$(resolve_artifact "$FILEBEAT_PQC_PACKAGE" "$ARTIFACT_BASE_URL" "${FILEBEAT_PACKAGE_NAMES[@]}")"
+AUDITD_ARCHIVE="$(resolve_optional_artifact "$AUDITD_BUNDLE" "$ARTIFACT_BASE_URL" "${AUDITD_BUNDLE_NAMES[@]}" || true)"
 
 phase "[3/9] Extract PQC and auditd artifacts"
 extract_agent_package "$AGENT_ARCHIVE"

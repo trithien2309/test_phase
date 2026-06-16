@@ -1,9 +1,11 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1c/packages"
+ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1"
 BOOTSTRAP_BASE_URL="https://raw.githubusercontent.com/trithien2309/test_phase/demo"
 ARTIFACT_PRIVATE_TOKEN=""
+ELASTIC_AGENT_VERSION="9.4.2"
+ELASTIC_AGENT_BASE_URL="https://artifacts.elastic.co/downloads/beats/elastic-agent"
 INSTALL_ROOT="/opt/ncs-elastic-agent-standalone"
 
 ARGS=("$@")
@@ -32,6 +34,22 @@ while [[ $# -gt 0 ]]; do
       ;;
     --artifact-private-token=*)
       ARTIFACT_PRIVATE_TOKEN="${1#*=}"
+      shift
+      ;;
+    --elastic-agent-version)
+      ELASTIC_AGENT_VERSION="${2:-}"
+      shift 2
+      ;;
+    --elastic-agent-version=*)
+      ELASTIC_AGENT_VERSION="${1#*=}"
+      shift
+      ;;
+    --elastic-agent-base-url)
+      ELASTIC_AGENT_BASE_URL="${2:-}"
+      shift 2
+      ;;
+    --elastic-agent-base-url=*)
+      ELASTIC_AGENT_BASE_URL="${1#*=}"
       shift
       ;;
     --install-root)
@@ -75,19 +93,12 @@ ensure_bootstrap_payload() {
     "client/linux/packages/manifest.json"
     "client/linux/packages/SHA256SUMS.txt"
     "client/linux/resources/auditd/conf/ubuntu_audit.rules"
-    "client/linux/resources/auditd/conf/centos_audit.rules"
-    "client/linux/resources/auditd/conf/centos6_audit.rules"
-    "client/linux/resources/auditd/conf/rhel6_audit.rules"
-    "client/linux/resources/auditd/conf/suse12_audit.rules"
-    "client/linux/resources/auditd/conf/suse12_sp5_audit.rules"
     "client/linux/resources/auditd/setup/ubuntu20/auditd_2.8.5-2ubuntu6_amd64.deb"
     "client/linux/resources/auditd/setup/ubuntu20/libauparse0_2.8.5-2ubuntu6_amd64.deb"
     "client/linux/resources/auditd/setup/ubuntu22/auditd_3.0.7-1build1_amd64.deb"
     "client/linux/resources/auditd/setup/ubuntu22/libauparse0_3.0.7-1build1_amd64.deb"
     "client/linux/resources/auditd/setup/ubuntu2404/auditd_3.1.2-2.1build1.1_amd64.deb"
     "client/linux/resources/auditd/setup/ubuntu2404/libauparse0t64_3.1.2-2.1build1.1_amd64.deb"
-    "client/linux/resources/auditd/setup/oracle_rhel_centos7/audit-2.8.5-4.el7.x86_64.rpm"
-    "client/linux/resources/auditd/setup/oracle_rhel_centos7/audit-libs-2.8.5-4.el7.x86_64.rpm"
   )
 
   for relative_path in "${required_files[@]}"; do
@@ -110,5 +121,7 @@ fi
 exec bash "$IMPLEMENTATION" \
   --artifact-base-url "$ARTIFACT_BASE_URL" \
   --bootstrap-base-url "$BOOTSTRAP_BASE_URL" \
+  --elastic-agent-version "$ELASTIC_AGENT_VERSION" \
+  --elastic-agent-base-url "$ELASTIC_AGENT_BASE_URL" \
   "${ARGS[@]}"
 

@@ -1,43 +1,57 @@
 {
-  "name": "soc-sme-linux-pqc-standalone",
+  "name": "soc-sme-linux-pqc-standalone-ubuntu",
   "phase": "linux-standalone-auditd-pqc",
-  "version": "phase1-linux",
+  "version": "phase1-linux-ubuntu",
+  "supported": {
+    "arch": ["x86_64", "amd64"],
+    "distros": ["ubuntu20.04", "ubuntu22.04", "ubuntu24.04"],
+    "test_target": "ubuntu24.04"
+  },
+  "artifact_sources": {
+    "elastic_agent": "https://artifacts.elastic.co/downloads/beats/elastic-agent",
+    "pqc_custom": "https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1",
+    "bootstrap_payload": "https://raw.githubusercontent.com/trithien2309/test_phase/demo"
+  },
   "artifacts": {
     "agent": {
-      "name": "ncs-elastic-agent-pqc-linux-amd64.tar.gz",
-      "fallback_names": []
+      "source": "official-elastic",
+      "version": "9.4.2",
+      "name": "elastic-agent-9.4.2-linux-x86_64.tar.gz"
     },
     "filebeat": {
-      "name": "filebeat-pqc-linux-amd64.tar.gz",
-      "fallback_names": []
+      "source": "ncs-pqc-custom",
+      "name": "filebeat-pqc-linux-amd64.zip",
+      "fallback_names": ["filebeat-pqc-linux-amd64.tar.gz"]
     },
     "auditd": {
+      "source": "embedded-bootstrap-or-optional-bundle",
       "name": "ncs-linux-auditd-v3.7.8-minimal.tar.gz",
-      "fallback_names": []
+      "required": false
     }
   },
   "transport": {
     "tls_min_version": "TLSv1.3",
-    "curve_types": [
-      "X25519MLKEM768"
-    ],
+    "curve_types": ["X25519MLKEM768"],
     "strict_pqc": true
   },
   "linux_log_sources": [
     "/var/log/audit/audit.log",
     "/var/log/auth.log",
-    "/var/log/secure",
     "/var/log/syslog",
-    "/var/log/messages",
     "/var/log/dpkg.log",
     "/var/log/apt/history.log",
-    "/var/log/yum.log",
-    "/var/log/dnf.log",
     "/var/log/ncs-agent-smoke.log"
   ],
   "unsupported": [
     "ubuntu16",
     "ubuntu18",
+    "debian",
+    "rhel",
+    "centos",
+    "rocky",
+    "almalinux",
+    "oracle-linux",
+    "suse",
     "rsyslog-forwarding",
     "syslog-ng-forwarding",
     "suricata",
