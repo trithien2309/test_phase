@@ -1,11 +1,11 @@
 # Linux PQC artifacts are intentionally not committed to git.
 # Elastic Agent official artifact:
-#   elastic-agent-9.4.2-linux-x86_64.tar.gz
+#   artifact = elastic-agent-9.4.2-linux-x86_64.tar.gz
 #
 # NCS custom artifact required for Linux standalone PQC:
-#   filebeat-pqc-linux-amd64.zip
+#   artifact = filebeat-pqc-linux-amd64.zip
 #
 # Optional auditd bundle if you choose to package resources as one archive:
-#   ncs-linux-auditd-v3.7.8-minimal.tar.gz
+#   artifact = ncs-linux-auditd-v3.7.8-minimal.tar.gz
 #
 # Add hashes below only after the files are uploaded to the selected package storage.

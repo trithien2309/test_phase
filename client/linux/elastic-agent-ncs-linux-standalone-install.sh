@@ -292,7 +292,18 @@ expected_sha_for() {
   if [[ ! -f "$sums" ]]; then
     return 0
   fi
-  awk -v n="$name" 'tolower($2)==tolower(n){print toupper($1); exit}' "$sums"
+  awk -v n="$name" '
+    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
+    {
+      f=$2
+      sub(/^\*/, "", f)
+      sub(/^.*\//, "", f)
+      if (length($1) == 64 && $1 ~ /^[0-9A-Fa-f]+$/ && tolower(f) == tolower(n)) {
+        print toupper($1)
+        exit
+      }
+    }
+  ' "$sums"
 }
 
 verify_sha_if_known() {
