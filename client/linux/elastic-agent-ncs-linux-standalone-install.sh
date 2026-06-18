@@ -665,6 +665,30 @@ YAML
 agent_build_info() {
   local version="$ELASTIC_AGENT_VERSION"
   local commit="unknown"
+  local versioned_home_abs=""
+  local versioned_home=""
+
+  if [[ -d "${AGENT_DIR}/data" ]]; then
+    versioned_home_abs="$(find "${AGENT_DIR}/data" -maxdepth 1 -mindepth 1 -type d -name 'elastic-agent-*' | sort | head -n 1 || true)"
+  fi
+
+  if [[ -n "$versioned_home_abs" ]]; then
+    local basename suffix
+    basename="$(basename "$versioned_home_abs")"
+    suffix="${basename#elastic-agent-}"
+    versioned_home="data/${basename}"
+
+    if [[ "$suffix" =~ ^([0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?)-(.+)$ ]]; then
+      version="${BASH_REMATCH[1]}"
+      commit="${BASH_REMATCH[3]}"
+    else
+      commit="$suffix"
+    fi
+
+    printf '%s|%s|%s|%s\n' "$version" "$commit" "$commit" "$versioned_home"
+    return 0
+  fi
+
   local out
   out="$("$AGENT_BIN" version --binary-only 2>&1 || true)"
   if [[ "$out" =~ Binary:[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?) ]]; then
@@ -693,6 +717,7 @@ ensure_agent_package_layout() {
 
   write_testbeat_spec "${components_dir}/testbeat.spec.yml"
   printf '%s\n' "$version" > "${AGENT_DIR}/package.version"
+  printf '%s\n' "$version" > "${AGENT_DIR}/${versioned_home}/package.version"
 
   cat > "${AGENT_DIR}/manifest.yaml" <<YAML
 apiVersion: v1
@@ -713,6 +738,8 @@ package:
 YAML
   cp "${AGENT_DIR}/manifest.yaml" "${AGENT_DIR}/${versioned_home}/manifest.yaml"
   ok "Elastic Agent package layout is ready"
+  info "Versioned home: ${versioned_home}"
+  info "Component spec: ${components_dir}/testbeat.spec.yml"
 }
 
 write_agent_config() {
@@ -905,6 +932,7 @@ verify_local_state() {
     systemctl status auditd --no-pager || true
     printf '\nFilebeat process:\n'
     pgrep -a filebeat || true
+    pgrep -a testbeat || true
     printf '\nPQC env:\n'
     cat /etc/ncs-elastic-agent/pqc.env 2>/dev/null || true
   } >> "$report" 2>&1
@@ -912,8 +940,22 @@ verify_local_state() {
   systemctl is-active --quiet elastic-agent && ok "Elastic Agent service is running" || warn "Elastic Agent service is not running"
   systemctl is-active --quiet auditd && ok "auditd service is running" || warn "auditd service is not running"
 
+  local installed_home=""
+  if [[ -d /opt/Elastic/Agent/data ]]; then
+    installed_home="$(find /opt/Elastic/Agent/data -maxdepth 1 -mindepth 1 -type d -name 'elastic-agent-*' | sort | tail -n 1 || true)"
+  fi
+  if [[ -n "$installed_home" ]]; then
+    if [[ -f "${installed_home}/components/testbeat" && -f "${installed_home}/components/testbeat.spec.yml" ]]; then
+      ok "Installed testbeat component files found: ${installed_home}/components"
+    else
+      warn "Installed testbeat component files are missing under ${installed_home}/components"
+    fi
+  fi
+
   if pgrep -af "filebeat-pqc-linux-amd64" >/dev/null 2>&1; then
     ok "Filebeat PQC process found"
+  elif pgrep -af "testbeat" >/dev/null 2>&1; then
+    ok "testbeat/Filebeat PQC process found"
   else
     warn "Filebeat PQC process not found yet"
   fi
