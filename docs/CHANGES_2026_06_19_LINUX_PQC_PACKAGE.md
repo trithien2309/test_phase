@@ -15,7 +15,7 @@
 
 ```text
 ncs-elastic-agent-pqc-linux-amd64.tar.gz
-  size: 183545213 bytes
+  size: 183545198 bytes
   sha256: DC79F7954B3D6E25302D89C7D4E313EE266D9CA8E9CD748341E1F3F4CCFF22F2
 
 filebeat-pqc-linux-amd64.zip
