@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1"
+ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1"
 BOOTSTRAP_BASE_URL="https://raw.githubusercontent.com/trithien2309/test_phase/demo"
 ARTIFACT_PRIVATE_TOKEN=""
-ELASTIC_AGENT_VERSION="9.4.2"
-ELASTIC_AGENT_BASE_URL="https://artifacts.elastic.co/downloads/beats/elastic-agent"
 AGENT_PACKAGE=""
 FILEBEAT_PQC_PACKAGE=""
 AUDITD_BUNDLE=""
@@ -16,7 +14,7 @@ SMOKE_LOG="/var/log/ncs-agent-smoke.log"
 ALLOW_GATEWAY_OFFLINE=0
 VERIFY_ONLY_AUDITD=0
 
-AGENT_PACKAGE_NAMES=()
+AGENT_PACKAGE_NAMES=("ncs-elastic-agent-pqc-linux-amd64.tar.gz")
 FILEBEAT_PACKAGE_NAMES=("filebeat-pqc-linux-amd64.zip" "filebeat-pqc-linux-amd64.tar.gz")
 AUDITD_BUNDLE_NAMES=("ncs-linux-auditd-v3.7.8-minimal.tar.gz")
 MANIFEST_NAME="manifest.json"
@@ -50,8 +48,6 @@ Options:
   --artifact-base-url URL
   --bootstrap-base-url URL
   --artifact-private-token TOKEN
-  --elastic-agent-version VERSION
-  --elastic-agent-base-url URL
   --agent-package PATH
   --filebeat-pqc-package PATH
   --auditd-bundle PATH
@@ -104,20 +100,20 @@ while [[ $# -gt 0 ]]; do
       ;;
     --elastic-agent-version)
       require_value "$1" "${2:-}"
-      ELASTIC_AGENT_VERSION="$2"
+      # Deprecated: Linux PQC now requires a custom Agent package.
       shift 2
       ;;
     --elastic-agent-version=*)
-      ELASTIC_AGENT_VERSION="${1#*=}"
+      # Deprecated: Linux PQC now requires a custom Agent package.
       shift
       ;;
     --elastic-agent-base-url)
       require_value "$1" "${2:-}"
-      ELASTIC_AGENT_BASE_URL="$2"
+      # Deprecated: Linux PQC now downloads Agent from ARTIFACT_BASE_URL.
       shift 2
       ;;
     --elastic-agent-base-url=*)
-      ELASTIC_AGENT_BASE_URL="${1#*=}"
+      # Deprecated: Linux PQC now downloads Agent from ARTIFACT_BASE_URL.
       shift
       ;;
     --agent-package)
@@ -204,7 +200,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 INSTALL_ROOT="${INSTALL_ROOT%/}"
-AGENT_PACKAGE_NAMES=("elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz")
 PACKAGES_DIR="${INSTALL_ROOT}/packages"
 LOGS_DIR="${INSTALL_ROOT}/logs"
 AGENT_DIR="${INSTALL_ROOT}/agent"
@@ -467,6 +462,19 @@ extract_agent_package() {
   ok "Elastic Agent binary: ${AGENT_BIN}"
 }
 
+validate_custom_agent_package() {
+  local versioned_home components_dir
+  versioned_home="$(find "${AGENT_DIR}/data" -maxdepth 1 -mindepth 1 -type d -name 'elastic-agent-*' | sort | head -n 1 || true)"
+  [[ -n "$versioned_home" ]] || fail "Custom Agent package is missing data/elastic-agent-* versioned home"
+  components_dir="${versioned_home}/components"
+  [[ -x "${components_dir}/testbeat" ]] || fail "Custom Agent package is missing executable components/testbeat"
+  [[ -f "${components_dir}/testbeat.spec.yml" ]] || fail "Custom Agent package is missing components/testbeat.spec.yml"
+  [[ -f "${AGENT_DIR}/manifest.yaml" ]] || fail "Custom Agent package is missing manifest.yaml"
+  grep -q '^version:[[:space:]]*co\.elastic\.agent/v1[[:space:]]*$' "${AGENT_DIR}/manifest.yaml" || \
+    fail "Custom Agent package manifest must use version: co.elastic.agent/v1"
+  ok "Custom Agent package contains testbeat component and valid package manifest"
+}
+
 extract_filebeat_package() {
   local archive="$1"
   local tmp
@@ -663,8 +671,8 @@ YAML
 }
 
 agent_build_info() {
-  local version="$ELASTIC_AGENT_VERSION"
-  local commit="unknown"
+  local version=""
+  local commit=""
   local versioned_home_abs=""
   local versioned_home=""
 
@@ -678,6 +686,12 @@ agent_build_info() {
     suffix="${basename#elastic-agent-}"
     versioned_home="data/${basename}"
 
+    if [[ -f "${AGENT_DIR}/package.version" ]]; then
+      version="$(head -n 1 "${AGENT_DIR}/package.version" | tr -d '[:space:]')"
+    elif [[ -f "${versioned_home_abs}/package.version" ]]; then
+      version="$(head -n 1 "${versioned_home_abs}/package.version" | tr -d '[:space:]')"
+    fi
+
     if [[ "$suffix" =~ ^([0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?)-(.+)$ ]]; then
       version="${BASH_REMATCH[1]}"
       commit="${BASH_REMATCH[3]}"
@@ -685,23 +699,13 @@ agent_build_info() {
       commit="$suffix"
     fi
 
+    [[ -n "$version" ]] || fail "Custom Agent package is missing package.version"
+    [[ -n "$commit" ]] || fail "Custom Agent package versioned home is invalid: ${versioned_home}"
     printf '%s|%s|%s|%s\n' "$version" "$commit" "$commit" "$versioned_home"
     return 0
   fi
 
-  local out
-  out="$("$AGENT_BIN" version --binary-only 2>&1 || true)"
-  if [[ "$out" =~ Binary:[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+(-SNAPSHOT)?) ]]; then
-    version="${BASH_REMATCH[1]}"
-  fi
-  if [[ "$out" =~ commit[[:space:]]+([A-Za-z0-9]+) ]]; then
-    commit="${BASH_REMATCH[1]}"
-  fi
-  local short_commit="$commit"
-  if (( ${#short_commit} > 6 )); then
-    short_commit="${short_commit:0:6}"
-  fi
-  printf '%s|%s|%s|data/elastic-agent-%s-%s\n' "$version" "$commit" "$short_commit" "$version" "$short_commit"
+  fail "Custom Agent package is missing data/elastic-agent-* versioned home. Rebuild ncs-elastic-agent-pqc-linux-amd64.tar.gz."
 }
 
 ensure_agent_package_layout() {
@@ -720,7 +724,7 @@ ensure_agent_package_layout() {
   printf '%s\n' "$version" > "${AGENT_DIR}/${versioned_home}/package.version"
 
   cat > "${AGENT_DIR}/manifest.yaml" <<YAML
-apiVersion: v1
+version: co.elastic.agent/v1
 kind: PackageManifest
 package:
   version: ${version}
@@ -883,7 +887,7 @@ preflight() {
   ok "Linux x86_64 detected: ${DETECTED_ID} ${DETECTED_VERSION}"
   info "Install root: ${INSTALL_ROOT}"
   info "PQC Gateway: ${GATEWAY_HOST}:${GATEWAY_PORT}"
-  info "Elastic Agent artifact: ${ELASTIC_AGENT_BASE_URL%/}/elastic-agent-${ELASTIC_AGENT_VERSION}-linux-x86_64.tar.gz"
+  info "Elastic Agent custom artifact: ${ARTIFACT_BASE_URL%/}/${AGENT_PACKAGE_NAMES[0]}"
   info "PQC artifact base: ${ARTIFACT_BASE_URL%/}"
 
   if test_tcp_port "$GATEWAY_HOST" "$GATEWAY_PORT"; then
@@ -965,7 +969,10 @@ verify_local_state() {
 
   local log_root="/opt/Elastic/Agent/data"
   if [[ -d "$log_root" ]]; then
-    grep -RhiE "pqc_mode|TLS handshake completed|configured_curve_preferences|strict_pqc" "$log_root" 2>/dev/null | tail -n 40 >> "$report" || true
+    grep -RhiE "using_custom_filebeat|pqc_env_forwarded|pqc_mode|TLS handshake completed|configured_curve_preferences|strict_pqc|input not supported|unknown flavor" "$log_root" 2>/dev/null | tail -n 80 >> "$report" || true
+    if grep -RhiE "input not supported|unknown flavor" "$log_root" >/dev/null 2>&1; then
+      warn "Agent logs contain component/flavor errors; see ${report}"
+    fi
   fi
   ok "Local verification report: ${report}"
 
@@ -997,12 +1004,13 @@ phase "[2/9] Download or use local PQC artifacts"
 copy_or_download_metadata "$MANIFEST_NAME" || true
 copy_or_download_metadata "$SHA256_NAME" || true
 show_manifest_info
-AGENT_ARCHIVE="$(resolve_artifact "$AGENT_PACKAGE" "$ELASTIC_AGENT_BASE_URL" "${AGENT_PACKAGE_NAMES[@]}")"
+AGENT_ARCHIVE="$(resolve_artifact "$AGENT_PACKAGE" "$ARTIFACT_BASE_URL" "${AGENT_PACKAGE_NAMES[@]}")"
 FILEBEAT_ARCHIVE="$(resolve_artifact "$FILEBEAT_PQC_PACKAGE" "$ARTIFACT_BASE_URL" "${FILEBEAT_PACKAGE_NAMES[@]}")"
 AUDITD_ARCHIVE="$(resolve_optional_artifact "$AUDITD_BUNDLE" "$ARTIFACT_BASE_URL" "${AUDITD_BUNDLE_NAMES[@]}" || true)"
 
 phase "[3/9] Extract PQC and auditd artifacts"
 extract_agent_package "$AGENT_ARCHIVE"
+validate_custom_agent_package
 extract_filebeat_package "$FILEBEAT_ARCHIVE"
 prepare_auditd_resources "$AUDITD_ARCHIVE"
 

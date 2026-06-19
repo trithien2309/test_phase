@@ -13,8 +13,9 @@ Transport: Filebeat PQC -> PQC Gateway :5443 -> Logstash :5044
 ## Final Package Naming
 
 ```text
-Elastic Agent official:
-  elastic-agent-9.4.2-linux-x86_64.tar.gz
+Elastic Agent custom PQC:
+  ncs-elastic-agent-pqc-linux-amd64.tar.gz
+  https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1
 
 Filebeat PQC custom:
   filebeat-pqc-linux-amd64.zip
@@ -26,17 +27,14 @@ Optional auditd bundle:
 ## Artifact Sources
 
 ```text
-Elastic Agent:
-  https://artifacts.elastic.co/downloads/beats/elastic-agent
-
 Filebeat PQC custom:
-  https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1
+  https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1
 
 Bootstrap payload:
   https://raw.githubusercontent.com/trithien2309/test_phase/demo
 ```
 
-Elastic Agent Linux is official in this phase because the PQC behavior lives in the custom Filebeat child process. The Agent only needs to run standalone and spawn Filebeat through `PQC_FILEBEAT_BIN`.
+Linux now uses a custom Elastic Agent package, matching the Windows flow. The custom Agent includes `PQC_FILEBEAT_BIN` runtime override support, and the package also includes a `testbeat` component whose binary is Filebeat PQC.
 
 ## Installer Command
 
@@ -52,7 +50,7 @@ With local artifacts:
 sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
   --gateway-host 192.168.22.171 \
   --gateway-port 5443 \
-  --agent-package ./elastic-agent-9.4.2-linux-x86_64.tar.gz \
+  --agent-package ./ncs-elastic-agent-pqc-linux-amd64.tar.gz \
   --filebeat-pqc-package ./filebeat-pqc-linux-amd64.zip
 ```
 
@@ -74,7 +72,7 @@ sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
 
 [2/9] Resolve artifacts
   - metadata from client/linux/packages or bootstrap URL
-  - Agent from official Elastic source
+  - custom Agent PQC from NCS custom source
   - Filebeat PQC from NCS custom source
   - auditd bundle optional
 
@@ -109,7 +107,8 @@ sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
 [9/9] Verify local
   - elastic-agent active
   - auditd active
-  - filebeat-pqc-linux-amd64 process visible
+  - testbeat/Filebeat PQC process visible
+  - using_custom_filebeat=true marker visible when PQC_FILEBEAT_BIN override is used
   - smoke log appended
   - PQC markers searched in Agent logs
 ```

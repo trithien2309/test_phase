@@ -41,7 +41,7 @@ sudo bash ./elastic-agent-ncs-linux-standalone-install.sh --gateway-host 192.168
 
 Artifact Linux đã chốt:
 
-- Elastic Agent official: `elastic-agent-9.4.2-linux-x86_64.tar.gz`
+- Elastic Agent custom PQC: `ncs-elastic-agent-pqc-linux-amd64.tar.gz`
 - Filebeat PQC custom: `filebeat-pqc-linux-amd64.zip`
 - Bootstrap chỉ kéo Ubuntu auditd resources, không kéo CentOS/RHEL/SUSE trong phase này.
 

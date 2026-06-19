@@ -4,7 +4,8 @@ Linux v1 di theo cung mo hinh Windows standalone da test:
 
 ```text
 Elastic Agent standalone
-  -> spawn Filebeat PQC custom
+  -> spawn testbeat component
+  -> testbeat binary is Filebeat PQC custom
   -> TLS 1.3 + X25519MLKEM768
   -> PQC Gateway :5443
   -> Logstash :5044
@@ -22,19 +23,19 @@ Unsupported in v1: Ubuntu 16/18, Debian, RHEL/CentOS/Rocky/Alma/Oracle, SUSE
 ## Package Naming And Sources
 
 ```text
-Elastic Agent official:
-  elastic-agent-9.4.2-linux-x86_64.tar.gz
-  https://artifacts.elastic.co/downloads/beats/elastic-agent
+NCS Elastic Agent PQC custom:
+  ncs-elastic-agent-pqc-linux-amd64.tar.gz
+  https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1
 
 NCS Filebeat PQC custom:
   filebeat-pqc-linux-amd64.zip
-  https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1
+  https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1
 
 Optional auditd bundle:
   ncs-linux-auditd-v3.7.8-minimal.tar.gz
 ```
 
-Elastic Agent khong can custom Linux binary trong v1 vi Agent chi dong vai tro supervisor standalone. Phan bat buoc custom la Filebeat PQC, duoc Agent spawn thong qua `PQC_FILEBEAT_BIN`.
+Linux v1 dung custom Elastic Agent de co cung runtime override voi Windows. Filebeat PQC duoc dong goi thanh component `testbeat`, dong thoi `PQC_FILEBEAT_BIN` van duoc set de custom Agent log ro `using_custom_filebeat=true`.
 
 ## Quick Run
 
@@ -50,7 +51,7 @@ Neu dung artifact local:
 sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
   --gateway-host 192.168.22.171 \
   --gateway-port 5443 \
-  --agent-package ./elastic-agent-9.4.2-linux-x86_64.tar.gz \
+  --agent-package ./ncs-elastic-agent-pqc-linux-amd64.tar.gz \
   --filebeat-pqc-package ./filebeat-pqc-linux-amd64.zip
 ```
 
@@ -60,7 +61,7 @@ sudo bash ./elastic-agent-ncs-linux-standalone-install.sh \
 [0/9] Preflight Ubuntu 20.04+ x86_64, systemd, gateway TCP
 [1/9] Remove existing Elastic Agent service
 [2/9] Resolve artifacts
-      - Agent official from Elastic
+      - Agent custom PQC from NCS artifact source
       - Filebeat PQC custom from NCS artifact source
 [3/9] Extract Agent/Filebeat/auditd resources
 [4/9] Install or verify auditd

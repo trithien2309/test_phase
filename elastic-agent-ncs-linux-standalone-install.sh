@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/raw/main/siem-pqc-phase1"
+ARTIFACT_BASE_URL="https://github.com/trithien2309/test_phase/releases/download/linux-pqc-phase1-v1"
 BOOTSTRAP_BASE_URL="https://raw.githubusercontent.com/trithien2309/test_phase/demo"
 ARTIFACT_PRIVATE_TOKEN=""
-ELASTIC_AGENT_VERSION="9.4.2"
-ELASTIC_AGENT_BASE_URL="https://artifacts.elastic.co/downloads/beats/elastic-agent"
 INSTALL_ROOT="/opt/ncs-elastic-agent-standalone"
 
 ARGS=("$@")
@@ -34,22 +32,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --artifact-private-token=*)
       ARTIFACT_PRIVATE_TOKEN="${1#*=}"
-      shift
-      ;;
-    --elastic-agent-version)
-      ELASTIC_AGENT_VERSION="${2:-}"
-      shift 2
-      ;;
-    --elastic-agent-version=*)
-      ELASTIC_AGENT_VERSION="${1#*=}"
-      shift
-      ;;
-    --elastic-agent-base-url)
-      ELASTIC_AGENT_BASE_URL="${2:-}"
-      shift 2
-      ;;
-    --elastic-agent-base-url=*)
-      ELASTIC_AGENT_BASE_URL="${1#*=}"
       shift
       ;;
     --install-root)
@@ -121,7 +103,6 @@ fi
 exec bash "$IMPLEMENTATION" \
   --artifact-base-url "$ARTIFACT_BASE_URL" \
   --bootstrap-base-url "$BOOTSTRAP_BASE_URL" \
-  --elastic-agent-version "$ELASTIC_AGENT_VERSION" \
-  --elastic-agent-base-url "$ELASTIC_AGENT_BASE_URL" \
+  --artifact-private-token "$ARTIFACT_PRIVATE_TOKEN" \
   "${ARGS[@]}"
 
