@@ -10,6 +10,8 @@
 - Added validation that rejects packages missing `testbeat`, `testbeat.spec.yml`, or the correct manifest version.
 - Changed the default artifact source to GitHub Release `linux-pqc-phase1-v1`.
 - Extended local verification to report `input not supported`, `unknown flavor`, PQC override, and TLS markers.
+- Added `client/linux/publish-linux-pqc-release.ps1` to verify hashes, push `demo`, and publish Release assets.
+- Added `client/linux/check-linux-pqc-install.sh` for repeatable Ubuntu PASS/FAIL verification.
 
 ## Built Artifacts
 

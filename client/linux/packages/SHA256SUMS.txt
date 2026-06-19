@@ -2,5 +2,3 @@ DC79F7954B3D6E25302D89C7D4E313EE266D9CA8E9CD748341E1F3F4CCFF22F2  ncs-elastic-ag
 70BE6E98BBD6524307A72983D24C05297DD10D5950B5A231255EDB3D3E5A22B7  filebeat-pqc-linux-amd64.zip
 
 # Optional auditd bundle is not required because Ubuntu resources are bootstrapped separately.
-#
-# Add hashes below only after the files are uploaded to the selected package storage.

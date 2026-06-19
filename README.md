@@ -45,6 +45,8 @@ Artifact Linux đã chốt:
 - Filebeat PQC custom: `filebeat-pqc-linux-amd64.zip`
 - Bootstrap chỉ kéo Ubuntu auditd resources, không kéo CentOS/RHEL/SUSE trong phase này.
 
+Publish Release và kiểm thử Ubuntu 24.04: `docs/LINUX_PQC_RELEASE_AND_TEST_CHECKLIST.md`.
+
 Chi tiết nằm trong `client/linux/README.md`.
 
 ## Server
