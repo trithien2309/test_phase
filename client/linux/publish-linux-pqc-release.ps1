@@ -85,8 +85,13 @@ try {
     }
 
     Write-Host "[5/5] Create or update GitHub Release $Tag"
-    & gh release view $Tag --repo $Repository *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "SilentlyContinue"
+    & gh release view $Tag --repo $Repository 1>$null 2>$null
+    $releaseExists = $LASTEXITCODE -eq 0
+    $ErrorActionPreference = $previousErrorActionPreference
+
+    if ($releaseExists) {
         & gh release upload $Tag $AgentArtifact $FilebeatArtifact $GeneratedSums --clobber --repo $Repository
     } else {
         & gh release create $Tag $AgentArtifact $FilebeatArtifact $GeneratedSums `
